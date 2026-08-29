@@ -8,11 +8,35 @@ import (
 )
 
 func TestText(t *testing.T) {
-	var b strings.Builder
-	Text(&b, ast.NewText("hello world", 1))
+	tests := []struct {
+		name  string
+		value string
+		want  string
+	}{
+		{
+			name:  "plain text",
+			value: "hello world",
+			want:  "io.WriteString(w, \"hello world\")\n",
+		},
+		{
+			name:  "strips line breaks and tabs",
+			value: "a\n\tb",
+			want:  "io.WriteString(w, \"ab\")\n",
+		},
+		{
+			name:  "only whitespace after stripping is dropped",
+			value: "\n\t  \n",
+			want:  "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var b strings.Builder
+			Text(&b, ast.NewText(tt.value, 1))
 
-	want := "io.WriteString(w, \"hello world\")\n"
-	if got := b.String(); got != want {
-		t.Errorf("Text() = %q, want %q", got, want)
+			if got := b.String(); got != tt.want {
+				t.Errorf("Text() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
