@@ -16,7 +16,7 @@ func TestRunBuild(t *testing.T) {
 	if code := run([]string{"build", dir}, &out); code != 0 {
 		t.Fatalf("run(build dir) exit = %d, want 0\nout:\n%s", code, out.String())
 	}
-	for _, name := range []string{"main.go", "go.mod", "pages/index.go", "pages/register.go"} {
+	for _, name := range []string{"main.go", "go.mod", "pages/index.go"} {
 		if _, err := os.Stat(filepath.Join(dir, "build", name)); err != nil {
 			t.Errorf("missing generated file build/%s: %v", name, err)
 		}

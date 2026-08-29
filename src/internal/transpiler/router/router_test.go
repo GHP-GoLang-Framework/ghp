@@ -181,10 +181,10 @@ func TestScanDetectsUnderscoreSlashFuncNameConflict(t *testing.T) {
 func TestScanRejectsInvalidFuncName(t *testing.T) {
 	// "2024.ghp" on its own (without another path segment to give it a
 	// leading letter) derives FuncName "2024" - a valid Go numeric
-	// literal, but not a valid identifier. Without this check, Register
-	// would generate "mux.HandleFunc(\"/2024\", 2024)": valid Go
-	// syntax, but semantically broken, only discovered later with
-	// `go build`.
+	// literal, but not a valid identifier. Without this check,
+	// transpiler would generate "mux.HandleFunc(\"/2024\", pages.2024)":
+	// valid Go syntax, but semantically broken, only discovered later
+	// with `go build`.
 	dir := t.TempDir()
 	writePages(t, dir, "2024.ghp")
 
