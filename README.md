@@ -78,7 +78,7 @@ docker run --rm ghcr.io/ghp-golang-framework/ghp:latest help
 ```bash
 git clone https://github.com/GHP-GoLang-Framework/GHP.git
 cd GHP
-npm install     # sets up the git hooks (Husky + commitlint)
+git config core.hooksPath .githooks  # enables the git hooks (no Node needed)
 gofmt -l ./src  # no output = formatted
 go vet ./src/...
 go test -short ./src/... -race     # unit (skips integration/e2e)

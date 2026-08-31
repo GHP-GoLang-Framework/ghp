@@ -27,7 +27,7 @@ How to contribute to GHP: branch, commit, PR, and review.
 
    Suggested name: `<type>/<short-description>`, using the same types as commits (see below) — `feat/`, `fix/`, `docs/`, `refactor/`, `test/`, `chore/`, `ci/`, `build/`.
 
-3. Commit on the branch following [Conventional Commits](https://www.conventionalcommits.org/en/) (enforced locally by commitlint + Husky):
+3. Commit on the branch following [Conventional Commits](https://www.conventionalcommits.org/en/) (enforced locally by the `commit-msg` git hook):
 
    ```
    feat(parser): recognize the <go:for expression> tag
