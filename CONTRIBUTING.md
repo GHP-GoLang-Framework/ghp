@@ -10,15 +10,15 @@ Thanks for your interest in contributing. This document covers the essentials to
 
 ## Setting up the local environment
 
-Prerequisites: Go (version from [`go.mod`](go.mod)) and Node.js (only to run the git hooks — the framework itself is 100% Go).
+Prerequisites: Go (version from [`go.mod`](go.mod)). No Node.js needed — the toolchain is 100% Go.
 
 ```bash
 git clone https://github.com/GHP-GoLang-Framework/GHP.git
 cd GHP
-npm install   # installs husky and commitlint, configures the git hooks
+git config core.hooksPath .githooks   # enables the git hooks
 ```
 
-This already activates `pre-commit` (gofmt + `go vet` on the changed files) and `commit-msg` (commitlint).
+This activates `pre-commit` (gofmt + `go vet` on the staged Go files) and `commit-msg` (validates the commit message via the Go `gitlint` command).
 
 ## Making a change
 

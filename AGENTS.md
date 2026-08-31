@@ -6,7 +6,7 @@ Working guidelines for AI agents editing this repository. These rules are mandat
 
 - Go monorepo: CLI in `src/cmd/ghp`, core under `src/internal` — LSP (`parser`, shared `ast`) and `transpiler` (`codegen`, `router`) — integration/e2e under `src/test`.
 - Source of truth for the GHP language: `docs/template.ghp`.
-- Root tooling layer is Node (husky + commitlint); the framework itself is 100% Go.
+- Git hooks live in `.githooks/` and the repo is 100% Go (no Node): `commit-msg` runs the `gitlint` Go command (`src/cmd/gitlint`), `pre-commit` runs gofmt + `go vet`.
 - VS Code extension lives under `editors/vscode` (TextMate grammar, snippets, grammar tests).
 - Read `CONTRIBUTING.md`, `docs/git-workflow.md` and `docs/testing.md` before your first change.
 
@@ -20,7 +20,7 @@ Working guidelines for AI agents editing this repository. These rules are mandat
 
 - Never commit to `main`. Every change is a new branch (`<type>/<short-description>`) pushed as a PR against `main`.
 - Split work into small logical commits: each commit is one self-contained unit that builds and passes tests.
-- Commit messages follow Conventional Commits (enforced by commitlint): imperative subject ≤ 100 chars, body explains the *why*, reference the Linear/GHP issue (`Refs: GHP-…`).
+- Commit messages follow Conventional Commits (enforced by the `commit-msg` git hook): imperative subject ≤ 100 chars, body explains the *why*, reference the Linear/GHP issue (`Refs: GHP-…`).
 - Never force-push or rewrite pushed history; the repo merges by squash anyway.
 
 ## 3. Pull Requests
@@ -61,5 +61,5 @@ Working guidelines for AI agents editing this repository. These rules are mandat
 
 ## 8. Housekeeping
 
-- Don't modify git config, hooks or CI secrets. Don't run `npm/pnpm install` unless dependencies actually changed.
+- Don't modify git config, hooks or CI secrets. There is no Node toolchain at the repo root; the only `npm install` that matters is under `editors/vscode`, and only run it when those dependencies change.
 - Leave the working tree clean: no stray artifacts, no `coverage.out` committed.
