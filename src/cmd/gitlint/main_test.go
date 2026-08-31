@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -42,5 +44,25 @@ func TestRun(t *testing.T) {
 				t.Errorf("run() stderr = %q, want it to contain %q", stderr.String(), tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestMainFunction(t *testing.T) {
+	if os.Getenv("GITLINT_TEST_MAIN") == "1" {
+		main()
+		t.Fatal("main returned without exiting")
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=TestMainFunction")
+	cmd.Env = append(os.Environ(), "GITLINT_TEST_MAIN=1")
+	if err := cmd.Run(); err == nil {
+		t.Fatal("main() with no --edit should exit non-zero")
+	} else {
+		var ee *exec.ExitError
+		if !errors.As(err, &ee) {
+			t.Fatalf("expected exec.ExitError, got %v", err)
+		}
+		if code := ee.ProcessState.ExitCode(); code != 2 {
+			t.Errorf("main() exit code = %d, want 2", code)
+		}
 	}
 }

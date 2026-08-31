@@ -15,7 +15,9 @@ func TestMessageValidate(t *testing.T) {
 
 		{name: "missing type", header: "add for tag", want: "missing type: header must follow 'type(scope): subject'"},
 		{name: "type not in enum", header: "feature: add tag", want: "type must be one of feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"},
-		{name: "type upper case", header: "feat(Parser): add tag", want: "scope must be lower-case"},
+		{name: "missing subject after scope", header: "feat(", want: "missing subject: header must follow 'type(scope): subject'"},
+		{name: "subject empty", header: "feat:", want: "subject must not be empty"},
+		{name: "scope upper case", header: "feat(Parser): add tag", want: "scope must be lower-case"},
 		{name: "subject trailing full stop", header: "feat: add tag.", want: "subject must not end with a full stop"},
 	}
 	for _, tt := range tests {

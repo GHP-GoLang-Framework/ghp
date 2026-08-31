@@ -55,9 +55,6 @@ func (m Message) Validate() string {
 	if !contains(Types, typ) {
 		return fmt.Sprintf("type must be one of %s", strings.Join(Types, ", "))
 	}
-	if typ != strings.ToLower(typ) {
-		return "type must be lower-case"
-	}
 
 	scope, subject, ok := splitScope(rest)
 	if !ok {
