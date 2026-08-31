@@ -68,6 +68,12 @@ func matchTagHead(s string) (kind tagKind, headLen int) {
 		if h.kind == tagStatement {
 			matched = statementBoundary(rest)
 		}
+		if h.kind == tagEcho {
+			// "go=" already ends on '=', a hard delimiter: whatever follows
+			// is the expression, so "go=name" is as valid as "go= name" and
+			// there is no identifier-continuation to guard against.
+			matched = true
+		}
 		if matched {
 			return h.kind, len(h.open)
 		}
@@ -76,9 +82,9 @@ func matchTagHead(s string) (kind tagKind, headLen int) {
 }
 
 // boundary reports whether rest may legally follow a tag head that already
-// ends on a fixed keyword (e.g. "go:if", "go="). The head only matches if
-// rest doesn't continue the identifier — otherwise "go:iffy" would be read
-// as "go:if" plus garbage.
+// ends on a fixed keyword (e.g. "go:if"). The head only matches if rest
+// doesn't continue the identifier — otherwise "go:iffy" would be read as
+// "go:if" plus garbage.
 func boundary(rest string) bool {
 	if rest == "" {
 		return true
