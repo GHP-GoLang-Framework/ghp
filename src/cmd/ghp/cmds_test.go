@@ -32,7 +32,7 @@ func TestBuild(t *testing.T) {
 			t.Errorf("output missing %q\ngot: %s", want, buf.String())
 		}
 	}
-	for _, name := range []string{"main.go", "go.mod", "pages/index.go", "pages/blog_slug.go", "pages/register.go"} {
+	for _, name := range []string{"main.go", "go.mod", "pages/index.go", "pages/blog_slug.go"} {
 		if _, err := os.Stat(filepath.Join(dir, "build", name)); err != nil {
 			t.Errorf("missing generated file build/%s: %v", name, err)
 		}
@@ -48,7 +48,7 @@ func TestBuildDefaultDir(t *testing.T) {
 	if code := Build(nil, &buf); code != 0 {
 		t.Fatalf("Build exit = %d, want 0\nout:\n%s", code, buf.String())
 	}
-	for _, name := range []string{"main.go", "go.mod", "pages/index.go", "pages/register.go"} {
+	for _, name := range []string{"main.go", "go.mod", "pages/index.go"} {
 		if _, err := os.Stat(filepath.Join(dir, "build", name)); err != nil {
 			t.Errorf("missing generated file build/%s: %v", name, err)
 		}

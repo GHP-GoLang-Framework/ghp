@@ -23,14 +23,17 @@ func TestGenerate(t *testing.T) {
 		got[f.Name] = f.Content
 	}
 
-	for _, name := range []string{"pages/index.go", "pages/blog_slug.go", "pages/register.go", "main.go", "go.mod"} {
+	for _, name := range []string{"pages/index.go", "pages/blog_slug.go", "main.go", "go.mod"} {
 		if _, ok := got[name]; !ok {
 			t.Errorf("missing generated file %q\nfiles: %v", name, keys(files))
 		}
 	}
 
-	if !strings.Contains(got["pages/register.go"], `mux.HandleFunc("/blog/{slug}", BlogSlug)`) {
-		t.Errorf("register.go missing slug route:\n%s", got["pages/register.go"])
+	if !strings.Contains(got["main.go"], `mux.HandleFunc("/blog/{slug}", pages.BlogSlug)`) {
+		t.Errorf("main.go missing slug route:\n%s", got["main.go"])
+	}
+	if !strings.Contains(got["main.go"], `mux.HandleFunc("/", pages.Index)`) {
+		t.Errorf("main.go missing index route:\n%s", got["main.go"])
 	}
 	if !strings.Contains(got["pages/blog_slug.go"], `r.PathValue("slug")`) {
 		t.Errorf("blog_slug.go missing PathValue:\n%s", got["pages/blog_slug.go"])

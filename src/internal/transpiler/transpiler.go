@@ -1,6 +1,6 @@
 // Package transpiler orchestrates the whole .ghp -> Go pipeline: it
 // scans a directory (router), parses each file (parser) and emits both
-// the handler functions (codegen) and the route wiring (router.Register)
+// the handler functions (codegen) and the route wiring in main.go
 // as the files of a runnable Go module.
 package transpiler
 
@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strings"
 
 	"ghp/src/internal/parser"
 	"ghp/src/internal/transpiler/codegen"
@@ -24,9 +25,9 @@ type File struct {
 }
 
 // Generate builds the Go module that serves the .ghp files under dir:
-// one handler file per page (codegen.Assemble), a register.go wiring
-// every route to its handler (router.Register), a main.go mounting them
-// on net/http.ServeMux, and a go.mod pinning the current toolchain.
+// one handler file per page (codegen.Assemble), a main.go wiring every
+// route to its handler and mounting them on net/http.ServeMux, and a
+// go.mod pinning the current toolchain.
 //
 // Files are returned, not written - the caller decides where they land
 // (dev runs them from a temp dir, build from an output flag).
@@ -57,22 +58,19 @@ func Generate(dir string) ([]File, error) {
 		files = append(files, File{Name: filepath.Join("pages", p.GoFile), Content: out})
 	}
 
-	reg, err := router.Register("pages", pages)
-	if err != nil {
-		return nil, err
-	}
 	files = append(files,
-		File{Name: filepath.Join("pages", "register.go"), Content: reg},
-		File{Name: "main.go", Content: mainSource()},
+		File{Name: "main.go", Content: mainSource(pages)},
 		File{Name: "go.mod", Content: goModSource()},
 	)
 	return files, nil
 }
 
-// mainSource is the generated entrypoint: it mounts the page handlers on
-// net/http.ServeMux and listens on GHP_PORT (default 8080).
-func mainSource() string {
-	return `package main
+// mainSource is the generated entrypoint: it mounts each page's handler
+// on net/http.ServeMux and listens on GHP_PORT (default 8080). Handlers
+// live in the pages subpackage and are referenced via pages.<FuncName>.
+func mainSource(pages []router.Page) string {
+	var b strings.Builder
+	b.WriteString(`package main
 
 import (
 	"fmt"
@@ -89,15 +87,19 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	pages.Register(mux)
-
+`)
+	for _, p := range pages {
+		fmt.Fprintf(&b, "\tmux.HandleFunc(%q, pages.%s)\n", p.Route, p.FuncName)
+	}
+	b.WriteString(`
 	fmt.Println("listening on http://localhost:" + port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
-`
+`)
+	return b.String()
 }
 
 // goModSource pins the module to the toolchain that generated it, so a
