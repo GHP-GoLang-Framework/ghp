@@ -14,28 +14,27 @@ func main() {
 // main() so it can be tested without killing the test process with os.Exit.
 func run(args []string, stdout io.Writer) int {
 	if len(args) < 1 {
-		printUsage(stdout)
+		printUsage()
 		return 2
 	}
 
 	switch args[0] {
 	case "dev":
-		return Dev(args[1:], stdout)
+		return Dev(args[1:])
 	case "build":
-		return Build(args[1:], stdout)
+		return Build(args[1:])
 	case "help":
-		printUsage(stdout)
+		printUsage()
 	default:
-		fmt.Fprintln(stdout, "Command unknown")
-		printUsage(stdout)
+		printUsage()
 		return 2
 	}
 
 	return 0
 }
 
-func printUsage(w io.Writer) {
-	fmt.Fprint(w, `
+func printUsage() {
+	fmt.Println(`
 	GHP - Good Hygiene Practices
 
 	Usage:
@@ -46,6 +45,5 @@ func printUsage(w io.Writer) {
 	  build [dir]  Build the project into <dir>/build
 	  help         Show this help message
 
-	Run 'ghp help' for more information.
-	`)
+	Run 'ghp help' for more information.`)
 }

@@ -10,14 +10,13 @@ package parser
 
 import (
 	"fmt"
+
 	"ghp/src/internal/ast"
 )
 
 // Parse reads a .ghp source and returns its tree in source order
 func Parse(source string) (*ast.Program, error) {
-	s := newScanner(source)
-
-	nodes, _, err := parseNodes(s, nil)
+	nodes, _, err := parseNodes(newScanner(source), nil)
 	if err != nil {
 		return nil, err
 	}
