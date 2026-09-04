@@ -1,4 +1,4 @@
-package router
+package pages
 
 import (
 	"path/filepath"
@@ -7,9 +7,9 @@ import (
 	"ghp/src/internal/textutil"
 )
 
-// GhpFile describes one page: where it lives, the identifiers its generated
+// Page describes one .ghp page: where it lives, the identifiers its generated
 // handler will use and the ServeMux route it is served at.
-type GhpFile struct {
+type Page struct {
 	RelDir   string
 	FileName string
 	FuncName string
@@ -21,8 +21,8 @@ type GhpFile struct {
 // name drops any brackets so it stays a valid Go file name. Ex: root
 // "/srv/src", RelDir "blog", FileName "about" -> "/srv/src/blog/about.go";
 // FileName "[slug]" -> "/srv/src/blog/slug.go".
-func (g *GhpFile) Go(root string) string {
-	return filepath.Join(root, g.RelDir, goName(g.FileName)+".go")
+func (p *Page) Go(root string) string {
+	return filepath.Join(root, p.RelDir, goName(p.FileName)+".go")
 }
 
 // goName strips characters that are not letters or digits so the result is a
@@ -32,15 +32,15 @@ func goName(fileName string) string {
 }
 
 // Ghp returns the path to the source .ghp page, rooted at root. Ex: root "/srv/src", RelDir "blog", FileName "about" -> "/srv/src/blog/about.ghp".
-func (g *GhpFile) Ghp(root string) string {
-	return filepath.Join(root, g.RelDir, g.FileName+".ghp")
+func (p *Page) Ghp(root string) string {
+	return filepath.Join(root, p.RelDir, p.FileName+".ghp")
 }
 
 // route returns the ServeMux route this page is served at, fixed at build
 // time so FileName can later be sanitized without losing the wildcard. Ex:
 // blog/[slug].ghp -> "/blog/{slug}", blog/index.ghp -> "/blog".
-func (g *GhpFile) route() string {
-	return g.Route
+func (p *Page) route() string {
+	return p.Route
 }
 
 // computeRoute maps a page to its ServeMux route. An "index" page maps to
@@ -59,8 +59,8 @@ func computeRoute(relDir string, fileName string) string {
 	return path
 }
 
-// NewGhpFile builds GhpFile from a page's relative path. The func name is the file, PascalCase'd; the package is the parent dir lower-cased, or "main" for a top-level page. Ex: "blog/about.ghp" -> "BlogAbout", "blog".
-func NewGhpFile(relPath string) *GhpFile {
+// NewPage builds Page from a page's relative path. The func name is the file, PascalCase'd; the package is the parent dir lower-cased, or "main" for a top-level page. Ex: "blog/about.ghp" -> "BlogAbout", "blog".
+func NewPage(relPath string) *Page {
 	parts := strings.Split(relPath, "/")
 	last := len(parts) - 1
 
@@ -73,7 +73,7 @@ func NewGhpFile(relPath string) *GhpFile {
 	relDir := strings.Join(parts[:last], "/")
 	fileName := strings.TrimSuffix(parts[last], ".ghp")
 
-	return &GhpFile{
+	return &Page{
 		RelDir:   relDir,
 		FileName: fileName,
 		FuncName: textutil.PascalCase(textutil.NormalizeASCII(fileName)),

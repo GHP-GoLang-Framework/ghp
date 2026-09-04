@@ -1,4 +1,4 @@
-package router
+package pages
 
 import (
 	"fmt"
@@ -31,22 +31,22 @@ func NewServer() *http.ServeMux {
 `
 
 // GenRoutes returns the Go source for ghproutes.go, which registers every
-// page in files on a ServeMux through AddRoutes. Pages in a subdirectory are
-// imported as <module>/<RelDir> and referenced as PkgName.FuncName; pages at
-// the root live in package main. Only the GET method is emitted for now.
-// Ex: module "example.com/site", blog/[slug].ghp ->
+// page in pages on a ServeMux through AddRoutes. Pages in a subdirectory
+// are imported as <module>/<RelDir> and referenced as PkgName.FuncName;
+// pages at the root live in package main. Only the GET method is emitted
+// for now. Ex: module "example.com/site", blog/[slug].ghp ->
 // mux.HandleFunc("GET /blog/{slug}", blog.BlogSlug).
-func GenRoutes(files []*GhpFile, module string) string {
+func GenRoutes(pages []*Page, module string) string {
 	imports := map[string]bool{}
-	routes := make([]genRoute, 0, len(files))
+	routes := make([]genRoute, 0, len(pages))
 
-	for _, f := range files {
-		handler := f.FuncName
-		if f.RelDir != "" {
-			handler = f.PkgName + "." + f.FuncName
-			imports[module+"/"+f.RelDir] = true
+	for _, p := range pages {
+		handler := p.FuncName
+		if p.RelDir != "" {
+			handler = p.PkgName + "." + p.FuncName
+			imports[module+"/"+p.RelDir] = true
 		}
-		routes = append(routes, genRoute{f.route(), handler})
+		routes = append(routes, genRoute{p.route(), handler})
 	}
 
 	sort.Slice(routes, func(i, j int) bool { return routes[i].path < routes[j].path })

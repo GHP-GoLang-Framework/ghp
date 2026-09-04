@@ -1,4 +1,4 @@
-package router
+package pages
 
 import (
 	"os"
@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-// TestSearchGhpFiles builds a temporary tree with .ghp files, nested dirs,
+// TestDiscover builds a temporary tree with .ghp files, nested dirs,
 // and non-.ghp files, then checks only the recursive .ghp pages come back
 // keyed by their path relative to the walk root.
-func TestSearchGhpFiles(t *testing.T) {
+func TestDiscover(t *testing.T) {
 	root := t.TempDir()
 
 	write(t, root, "about.ghp")
@@ -19,7 +19,7 @@ func TestSearchGhpFiles(t *testing.T) {
 	write(t, root, "blog/notes.md")
 	write(t, root, "assets/img.png")
 
-	got := SearchGhpFiles(root)
+	got := Discover(root)
 
 	want := []string{
 		"about.ghp",
@@ -45,23 +45,23 @@ func TestSearchGhpFiles(t *testing.T) {
 	}
 }
 
-// TestSearchGhpFilesMissingDir verifies an unreadable root does not panic
+// TestDiscoverMissingDir verifies an unreadable root does not panic
 // and simply yields no files.
-func TestSearchGhpFilesMissingDir(t *testing.T) {
-	got := SearchGhpFiles(filepath.Join(t.TempDir(), "does-not-exist"))
+func TestDiscoverMissingDir(t *testing.T) {
+	got := Discover(filepath.Join(t.TempDir(), "does-not-exist"))
 
 	if len(got) != 0 {
 		t.Fatalf("got %d files from a missing dir, want 0", len(got))
 	}
 }
 
-// TestSearchGhpFilesRelativeKeys checks the returned pages carry the
+// TestDiscoverRelativeKeys checks the returned pages carry the
 // expected package/function identifiers for their relative location.
-func TestSearchGhpFilesRelativeKeys(t *testing.T) {
+func TestDiscoverRelativeKeys(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "blog/about.ghp")
 
-	got := SearchGhpFiles(root)
+	got := Discover(root)
 	if len(got) != 1 {
 		t.Fatalf("got %d files, want 1", len(got))
 	}

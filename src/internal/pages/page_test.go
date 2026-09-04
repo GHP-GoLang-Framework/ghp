@@ -1,8 +1,8 @@
-package router
+package pages
 
 import "testing"
 
-func TestNewGhpFile(t *testing.T) {
+func TestNewPage(t *testing.T) {
 	tests := []struct {
 		name       string
 		relPath    string
@@ -71,7 +71,7 @@ func TestNewGhpFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewGhpFile(tt.relPath)
+			got := NewPage(tt.relPath)
 
 			if got.RelDir != tt.wantRelDir {
 				t.Errorf("RelDir = %q, want %q", got.RelDir, tt.wantRelDir)

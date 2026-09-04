@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"ghp/src/internal/colors"
+	"ghp/src/internal/pages"
 	"ghp/src/internal/transpiler"
-	"ghp/src/internal/transpiler/router"
 )
 
 func Build(args []string) int {
@@ -27,7 +27,7 @@ func Build(args []string) int {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	files := router.SearchGhpFiles(tmpDir)
+	files := pages.Discover(tmpDir)
 
 	status := _build(files, tmpDir)
 	if err := writeRoutes(files, modulePath(filepath.Join(tmpDir, "go.mod")), filepath.Join(tmpDir, "ghproutes.go"), filepath.Join(src, "ghproutes.go")); err != nil {
@@ -49,7 +49,7 @@ func Dev(args []string) int {
 }
 
 // _build transpiles every .ghp page in files, printing a clear error that names the failing page for each one that fails, while still transpiling the rest of the pages. The generated .go files land in out. It returns a non-zero exit code when any page failed. Ex: "ghp: blog/index.ghp: parse line 3: ...".
-func _build(files []*router.GhpFile, out string) int {
+func _build(files []*pages.Page, out string) int {
 	fmt.Println("Project: ", colors.Magenta(out))
 	status := 0
 	for _, f := range files {
@@ -145,8 +145,8 @@ func buildBinary(tmpDir string, src string, name string) error {
 // tmpRoutes (where the build lives) and to routesPath, the route file the
 // user's tree keeps. Ex: tmpRoutes /tmp/ghp/ghproutes.go, routesPath
 // /srv/pages/ghproutes.go -> both files carry the same generated source.
-func writeRoutes(files []*router.GhpFile, module string, tmpRoutes string, routesPath string) error {
-	content := router.GenRoutes(files, module)
+func writeRoutes(files []*pages.Page, module string, tmpRoutes string, routesPath string) error {
+	content := pages.GenRoutes(files, module)
 	for _, f := range []string{tmpRoutes, routesPath} {
 		if err := os.WriteFile(f, []byte(content), 0o644); err != nil {
 			return err

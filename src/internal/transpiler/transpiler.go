@@ -1,5 +1,5 @@
 // Package transpiler converts one .ghp page into its generated Go file:
-// it reads the source (router), parses it (parser) and emits the handler
+// it reads the source (pages), parses it (parser) and emits the handler
 // function (codegen), writing the .go file next to the .ghp origin.
 package transpiler
 
@@ -11,20 +11,20 @@ import (
 	"golang.org/x/term"
 
 	"ghp/src/internal/colors"
+	"ghp/src/internal/pages"
 	"ghp/src/internal/parser"
 	"ghp/src/internal/transpiler/codegen"
-	"ghp/src/internal/transpiler/router"
 )
 
-// Transpile converts the .ghp page described by ghpFile into its
-// generated .go file: it reads the page from src and writes the handler to
-// out. Ex: src /srv/pages, out /tmp/ghp-x, blog/about.ghp ->
+// Transpile converts the .ghp page described by page into its generated
+// .go file: it reads the page from src and writes the handler to out.
+// Ex: src /srv/pages, out /tmp/ghp-x, blog/about.ghp ->
 // /tmp/ghp-x/blog/about.go.
-func Transpile(ghpFile *router.GhpFile, src string, out string) error {
-	err := transpile(ghpFile, src, out)
-	name := colors.Yellow(ghpFile.FileName + ".ghp")
-	if ghpFile.RelDir != "" {
-		name = ghpFile.RelDir + "/" + name
+func Transpile(page *pages.Page, src string, out string) error {
+	err := transpile(page, src, out)
+	name := colors.Yellow(page.FileName + ".ghp")
+	if page.RelDir != "" {
+		name = page.RelDir + "/" + name
 	}
 
 	status := ""
@@ -54,23 +54,23 @@ func statusCol(w int) int {
 	return w * 8 / 10
 }
 
-func transpile(ghpFile *router.GhpFile, src string, out string) error {
-	content, err := os.ReadFile(ghpFile.Ghp(src))
+func transpile(page *pages.Page, src string, out string) error {
+	content, err := os.ReadFile(page.Ghp(src))
 	if err != nil {
-		return fmt.Errorf("read %s: %w", ghpFile.Ghp(src), err)
+		return fmt.Errorf("read %s: %w", page.Ghp(src), err)
 	}
 
 	program, err := parser.Parse(string(content))
 	if err != nil {
-		return fmt.Errorf("parse %s: %w", ghpFile.Ghp(src), err)
+		return fmt.Errorf("parse %s: %w", page.Ghp(src), err)
 	}
 
-	goSrc, err := codegen.Assemble(ghpFile.PkgName, ghpFile.FuncName, program)
+	goSrc, err := codegen.Assemble(page.PkgName, page.FuncName, program)
 	if err != nil {
-		return fmt.Errorf("codegen %s: %w", ghpFile.Ghp(src), err)
+		return fmt.Errorf("codegen %s: %w", page.Ghp(src), err)
 	}
 
-	goPath := ghpFile.Go(out)
+	goPath := page.Go(out)
 	if err := os.MkdirAll(filepath.Dir(goPath), 0o755); err != nil {
 		return fmt.Errorf("mkdir %s: %w", filepath.Dir(goPath), err)
 	}
