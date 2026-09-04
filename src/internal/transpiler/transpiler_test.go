@@ -107,6 +107,43 @@ func TestTranspilePublic(t *testing.T) {
 	}
 }
 
+func TestTranspileMkdirError(t *testing.T) {
+	src := t.TempDir()
+	writePage(t, src, "about.ghp", "<h1>About</h1>\n")
+	out := filepath.Join(t.TempDir(), "blocked")
+	if err := os.WriteFile(out, []byte("file"), 0o644); err != nil {
+		t.Fatalf("write blocker: %v", err)
+	}
+
+	page := pages.NewPage("about.ghp")
+	err := transpileTo(page, src, out, &bytes.Buffer{})
+	if err == nil {
+		t.Fatal("expected mkdir error")
+	}
+	if !strings.Contains(err.Error(), "mkdir") {
+		t.Errorf("error = %q, want mention of mkdir", err)
+	}
+}
+
+func TestTranspileWriteError(t *testing.T) {
+	src := t.TempDir()
+	writePage(t, src, "about.ghp", "<h1>About</h1>\n")
+	out := t.TempDir()
+	// A directory squatting on the output makes WriteFile fail.
+	if err := os.MkdirAll(filepath.Join(out, "about.go"), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+
+	page := pages.NewPage("about.ghp")
+	err := transpileTo(page, src, out, &bytes.Buffer{})
+	if err == nil {
+		t.Fatal("expected write error")
+	}
+	if !strings.Contains(err.Error(), "write") {
+		t.Errorf("error = %q, want mention of write", err)
+	}
+}
+
 func TestStatusCol(t *testing.T) {
 	if got := statusCol(100); got != 80 {
 		t.Errorf("statusCol(100) = %d, want 80", got)
