@@ -26,7 +26,7 @@ type GhpFile struct {
 // name drops any brackets so it stays a valid Go file name. Ex: root
 // "/srv/src", RelDir "blog", FileName "about" -> "/srv/src/blog/about.go";
 // FileName "[slug]" -> "/srv/src/blog/slug.go".
-func (g GhpFile) Go(root string) string {
+func (g *GhpFile) Go(root string) string {
 	return filepath.Join(root, g.RelDir, goName(g.FileName)+".go")
 }
 
@@ -37,14 +37,14 @@ func goName(fileName string) string {
 }
 
 // Ghp returns the path to the source .ghp page, rooted at root. Ex: root "/srv/src", RelDir "blog", FileName "about" -> "/srv/src/blog/about.ghp".
-func (g GhpFile) Ghp(root string) string {
+func (g *GhpFile) Ghp(root string) string {
 	return filepath.Join(root, g.RelDir, g.FileName+".ghp")
 }
 
 // route returns the ServeMux route this page is served at, fixed at build
 // time so FileName can later be sanitized without losing the wildcard. Ex:
 // blog/[slug].ghp -> "/blog/{slug}", blog/index.ghp -> "/blog".
-func (g GhpFile) route() string {
+func (g *GhpFile) route() string {
 	return g.Route
 }
 
@@ -76,7 +76,7 @@ func changeBrackets(s string) string {
 }
 
 // NewGhpFile builds GhpFile from a page's relative path. The func name is the file, PascalCase'd; the package is the parent dir lower-cased, or "main" for a top-level page. Ex: "blog/about.ghp" -> "BlogAbout", "blog".
-func NewGhpFile(relPath string) GhpFile {
+func NewGhpFile(relPath string) *GhpFile {
 	parts := strings.Split(relPath, "/")
 	last := len(parts) - 1
 
@@ -89,7 +89,7 @@ func NewGhpFile(relPath string) GhpFile {
 	relDir := strings.Join(parts[:last], "/")
 	fileName := strings.TrimSuffix(parts[last], ".ghp")
 
-	return GhpFile{
+	return &GhpFile{
 		RelDir:   relDir,
 		FileName: fileName,
 		FuncName: pascalCaseName(normalizeASCII(fileName)),

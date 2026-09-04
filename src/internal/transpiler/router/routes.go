@@ -18,7 +18,7 @@ type genRoute struct {
 // the root live in package main. Only the GET method is emitted for now.
 // Ex: module "example.com/site", blog/[slug].ghp ->
 // mux.HandleFunc("GET /blog/{slug}", blog.BlogSlug).
-func GenRoutes(files []GhpFile, module string) string {
+func GenRoutes(files []*GhpFile, module string) string {
 	imports := map[string]bool{}
 	routes := make([]genRoute, 0, len(files))
 

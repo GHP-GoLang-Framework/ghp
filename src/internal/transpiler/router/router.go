@@ -9,8 +9,8 @@ import (
 // SearchGhpFiles recursively walks absPath and returns a GhpFile for every
 // .ghp file found. The relPath inside each GhpFile is computed relative to
 // absPath.
-func SearchGhpFiles(absPath string) []GhpFile {
-	var files []GhpFile
+func SearchGhpFiles(absPath string) []*GhpFile {
+	var files []*GhpFile
 
 	filepath.WalkDir(absPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(d.Name(), ".ghp") {
@@ -19,8 +19,7 @@ func SearchGhpFiles(absPath string) []GhpFile {
 
 		rel, err := filepath.Rel(absPath, path)
 		if err == nil {
-			file := NewGhpFile(filepath.ToSlash(rel))
-			files = append(files, file)
+			files = append(files, NewGhpFile(filepath.ToSlash(rel)))
 		}
 
 		return nil

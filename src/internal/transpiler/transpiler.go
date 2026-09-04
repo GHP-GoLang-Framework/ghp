@@ -20,7 +20,7 @@ import (
 // generated .go file: it reads the page from src and writes the handler to
 // out. Ex: src /srv/pages, out /tmp/ghp-x, blog/about.ghp ->
 // /tmp/ghp-x/blog/about.go.
-func Transpile(ghpFile router.GhpFile, src string, out string) error {
+func Transpile(ghpFile *router.GhpFile, src string, out string) error {
 	err := transpile(ghpFile, src, out)
 	name := colors.Yellow(ghpFile.FileName + ".ghp")
 	if ghpFile.RelDir != "" {
@@ -54,7 +54,7 @@ func statusCol(w int) int {
 	return w * 8 / 10
 }
 
-func transpile(ghpFile router.GhpFile, src string, out string) error {
+func transpile(ghpFile *router.GhpFile, src string, out string) error {
 	content, err := os.ReadFile(ghpFile.Ghp(src))
 	if err != nil {
 		return fmt.Errorf("read %s: %w", ghpFile.Ghp(src), err)

@@ -16,25 +16,28 @@ import (
 func Build(args []string) int {
 	src, err := getPath(args)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ghp build: %v\n", err)
+		fmt.Fprintf(os.Stderr, "ghp: %v\n", err)
 		return 1
 	}
 
 	tmpDir, err := transcribe(src)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ghp build: %v\n", err)
+		fmt.Fprintf(os.Stderr, "ghp: %v\n", err)
 		return 1
 	}
 	defer os.RemoveAll(tmpDir)
 
-	status := _build(tmpDir, tmpDir)
-	if err := writeRoutes(tmpDir, filepath.Join(src, "ghproutes.go")); err != nil {
+	files := router.SearchGhpFiles(tmpDir)
+
+	status := _build(files, tmpDir)
+	if err := writeRoutes(files, modulePath(filepath.Join(tmpDir, "go.mod")), filepath.Join(tmpDir, "ghproutes.go"), filepath.Join(src, "ghproutes.go")); err != nil {
 		fmt.Fprintf(os.Stderr, "ghp build: %v\n", err)
 		status = 1
 	}
+
 	if status == 0 {
 		if err := buildBinary(tmpDir, src, "app"); err != nil {
-			fmt.Fprintf(os.Stderr, "ghp build: %v\n", err)
+			fmt.Fprintf(os.Stderr, "ghp: %v\n", err)
 			status = 1
 		}
 	}
@@ -45,13 +48,13 @@ func Dev(args []string) int {
 	return Build(args)
 }
 
-// _build transpiles every .ghp page under src, printing a clear error that names the failing page for each one that fails, while still transpiling the rest of the pages. The generated .go files land in out. It returns a non-zero exit code when any page failed. Ex: "ghp build: blog/index.ghp: parse line 3: ...".
-func _build(src string, out string) int {
-	fmt.Println("Project: ", colors.Magenta(src))
+// _build transpiles every .ghp page in files, printing a clear error that names the failing page for each one that fails, while still transpiling the rest of the pages. The generated .go files land in out. It returns a non-zero exit code when any page failed. Ex: "ghp: blog/index.ghp: parse line 3: ...".
+func _build(files []*router.GhpFile, out string) int {
+	fmt.Println("Project: ", colors.Magenta(out))
 	status := 0
-	for _, f := range router.SearchGhpFiles(src) {
-		if err := transpiler.Transpile(f, src, out); err != nil {
-			fmt.Fprintf(os.Stderr, "ghp build: %s\n", err)
+	for _, f := range files {
+		if err := transpiler.Transpile(f, out, out); err != nil {
+			fmt.Fprintf(os.Stderr, "ghp: %s\n", err)
 			status = 1
 		}
 	}
@@ -139,12 +142,12 @@ func buildBinary(tmpDir string, src string, name string) error {
 }
 
 // writeRoutes generates ghproutes.go from the staged pages and writes it to
-// the temp dir (where the build lives) and to routesPath, the route file the
-// user's tree keeps. Ex: tmp /tmp/ghp, routesPath /srv/pages/ghproutes.go ->
-// /tmp/ghp/ghproutes.go and /srv/pages/ghproutes.go.
-func writeRoutes(tmpDir string, routesPath string) error {
-	content := router.GenRoutes(router.SearchGhpFiles(tmpDir), modulePath(filepath.Join(tmpDir, "go.mod")))
-	for _, f := range []string{filepath.Join(tmpDir, "ghproutes.go"), routesPath} {
+// tmpRoutes (where the build lives) and to routesPath, the route file the
+// user's tree keeps. Ex: tmpRoutes /tmp/ghp/ghproutes.go, routesPath
+// /srv/pages/ghproutes.go -> both files carry the same generated source.
+func writeRoutes(files []*router.GhpFile, module string, tmpRoutes string, routesPath string) error {
+	content := router.GenRoutes(files, module)
+	for _, f := range []string{tmpRoutes, routesPath} {
 		if err := os.WriteFile(f, []byte(content), 0o644); err != nil {
 			return err
 		}
