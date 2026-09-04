@@ -52,8 +52,12 @@ func (s *scanner) nextText() (node *ast.Text, ok bool) {
 				break
 			}
 		}
-		s.advance(1)
+		s.pos++
 	}
+
+	// Count the newlines crossed in one pass over the whole run, instead of
+	// calling advance per byte (which would recount a slice each time).
+	s.line += strings.Count(s.src[start:s.pos], "\n")
 
 	if s.pos == start {
 		return nil, false
