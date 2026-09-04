@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -27,35 +28,21 @@ func Build(args []string) int {
 	defer os.RemoveAll(tmpDir)
 
 	status := _build(tmpDir, tmpDir)
-	if err := writeRoutes(src, tmpDir); err != nil {
+	if err := writeRoutes(tmpDir, filepath.Join(src, "ghproutes.go")); err != nil {
 		fmt.Fprintf(os.Stderr, "ghp build: %v\n", err)
 		status = 1
 	}
-	wait(tmpDir)
+	if status == 0 {
+		if err := buildBinary(tmpDir, src, "app"); err != nil {
+			fmt.Fprintf(os.Stderr, "ghp build: %v\n", err)
+			status = 1
+		}
+	}
 	return status
 }
 
 func Dev(args []string) int {
-	src, err := getPath(args)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "ghp dev: %v\n", err)
-		return 1
-	}
-
-	tmpDir, err := transcribe(src)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "ghp dev: %v\n", err)
-		return 1
-	}
-	defer os.RemoveAll(tmpDir)
-
-	status := _build(tmpDir, tmpDir)
-	if err := writeRoutes(src, tmpDir); err != nil {
-		fmt.Fprintf(os.Stderr, "ghp dev: %v\n", err)
-		status = 1
-	}
-	wait(tmpDir)
-	return status
+	return Build(args)
 }
 
 // _build transpiles every .ghp page under src, printing a clear error that names the failing page for each one that fails, while still transpiling the rest of the pages. The generated .go files land in out. It returns a non-zero exit code when any page failed. Ex: "ghp build: blog/index.ghp: parse line 3: ...".
@@ -138,22 +125,27 @@ func transcribe(src string) (string, error) {
 	return tmpDir, nil
 }
 
-// wait prints the kept temp dir and blocks until the user presses Enter so
-// the staged output can be inspected before it is removed.
-func wait(dir string) {
-	fmt.Printf("\nTemp output kept at: %s\n", dir)
-	fmt.Print("Press Enter to clean up and exit...")
-	fmt.Scanln()
+// buildBinary compiles the main package of the staged module in tmpDir and
+// places the resulting executable name inside src. Ex: tmp /tmp/ghp, src
+// /srv/pages, name "app" -> /srv/pages/app.
+func buildBinary(tmpDir string, src string, name string) error {
+	cmd := exec.Command("go", "build", "-o", filepath.Join(src, name), ".")
+	cmd.Dir = tmpDir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("go build: %w\n%s", err, out)
+	}
+	return nil
 }
 
 // writeRoutes generates ghproutes.go from the staged pages and writes it to
-// both the temp dir (where the build lives) and the project root src, so the
-// user's tree gets the generated router. Ex: src /srv/pages, tmp /tmp/ghp
-// -> /tmp/ghp/ghproutes.go and /srv/pages/ghproutes.go.
-func writeRoutes(src string, tmpDir string) error {
+// the temp dir (where the build lives) and to routesPath, the route file the
+// user's tree keeps. Ex: tmp /tmp/ghp, routesPath /srv/pages/ghproutes.go ->
+// /tmp/ghp/ghproutes.go and /srv/pages/ghproutes.go.
+func writeRoutes(tmpDir string, routesPath string) error {
 	content := router.GenRoutes(router.SearchGhpFiles(tmpDir), modulePath(filepath.Join(tmpDir, "go.mod")))
-	for _, dir := range []string{tmpDir, src} {
-		if err := os.WriteFile(filepath.Join(dir, "ghproutes.go"), []byte(content), 0o644); err != nil {
+	for _, f := range []string{filepath.Join(tmpDir, "ghproutes.go"), routesPath} {
+		if err := os.WriteFile(f, []byte(content), 0o644); err != nil {
 			return err
 		}
 	}
