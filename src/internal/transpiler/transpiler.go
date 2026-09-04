@@ -5,6 +5,7 @@ package transpiler
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -17,10 +18,16 @@ import (
 )
 
 // Transpile converts the .ghp page described by page into its generated
-// .go file: it reads the page from src and writes the handler to out.
-// Ex: src /srv/pages, out /tmp/ghp-x, blog/about.ghp ->
-// /tmp/ghp-x/blog/about.go.
+// .go file: it reads the page from src and writes the handler to out,
+// reporting progress to the standard output. Ex: src /srv/pages,
+// out /tmp/ghp-x, blog/about.ghp -> /tmp/ghp-x/blog/about.go.
 func Transpile(page *pages.Page, src string, out string) error {
+	return transpileTo(page, src, out, os.Stdout)
+}
+
+// transpileTo is Transpile with the status output directed to w, so tests
+// can capture it instead of touching the real stdout.
+func transpileTo(page *pages.Page, src string, out string, w io.Writer) error {
 	err := transpile(page, src, out)
 	name := colors.Yellow(page.FileName + ".ghp")
 	if page.RelDir != "" {
@@ -35,7 +42,7 @@ func Transpile(page *pages.Page, src string, out string) error {
 	}
 
 	line := "  " + colors.Cyan(name)
-	fmt.Printf("%s%s\n", colors.Dots(line, statusCol(width())), "["+status+"]")
+	fmt.Fprintf(w, "%s%s\n", colors.Dots(line, statusCol(width())), "["+status+"]")
 	return err
 }
 
