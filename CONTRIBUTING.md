@@ -48,7 +48,7 @@ type(optional scope): short description in the imperative
 
 Accepted types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`. The PR title follows the same pattern — it is revalidated in CI and becomes the squash commit message on merge.
 
-Recommended scope: the affected domain/package (`parser`, `codegen`, `cli`, `devserver`, `runtime`, `routes`, `docker`, `docs`...), never the file name.
+Recommended scope: the affected domain/package (`parser`, `codegen`, `pages`, `build`, `commitmsg`, `cli`, `docker`, `docs`...), never the file name.
 
 ## Code quality
 

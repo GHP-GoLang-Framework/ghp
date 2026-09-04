@@ -69,7 +69,7 @@ func scanNeededImports(nodes []ast.Node, need *neededImports) {
 		switch node := n.(type) {
 		case *ast.Text:
 			// A Text that is only whitespace emits no io.WriteString (see
-			// gen.Text), so it doesn't need the io import either.
+			// genText), so it doesn't need the io import either.
 			if strings.TrimSpace(node.Value) != "" {
 				need.io = true
 			}

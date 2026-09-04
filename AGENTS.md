@@ -4,7 +4,7 @@ Working guidelines for AI agents editing this repository. These rules are mandat
 
 ## Repo overview
 
-- Go monorepo: CLI in `src/cmd/ghp`, core under `src/internal` — LSP (`parser`, shared `ast`) and `transpiler` (`codegen`, `router`) — integration/e2e under `src/test`.
+- Go monorepo: commands in `src/cmd` (`ghp`, `gitlint`), core under `src/internal` (`ast`, `parser`, `textutil`, `pages`, `build`, `commitmsg`, `transpiler/codegen`), integration/e2e under `src/test`.
 - Source of truth for the GHP language: `docs/template.ghp`.
 - Git hooks live in `.githooks/` and the repo is 100% Go (no Node): `commit-msg` runs the `gitlint` Go command (`src/cmd/gitlint`), `pre-commit` runs gofmt + `go vet`.
 - VS Code extension lives under `editors/vscode` (TextMate grammar, snippets, grammar tests).
