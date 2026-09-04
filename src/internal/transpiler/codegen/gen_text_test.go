@@ -1,4 +1,4 @@
-package gen
+package codegen
 
 import (
 	"strings"
@@ -7,7 +7,7 @@ import (
 	"ghp/src/internal/ast"
 )
 
-func TestText(t *testing.T) {
+func TestGenText(t *testing.T) {
 	tests := []struct {
 		name  string
 		value string
@@ -32,10 +32,10 @@ func TestText(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var b strings.Builder
-			Text(&b, ast.NewText(tt.value, 1))
+			genText(&b, ast.NewText(tt.value, 1))
 
 			if got := b.String(); got != tt.want {
-				t.Errorf("Text() = %q, want %q", got, tt.want)
+				t.Errorf("genText() = %q, want %q", got, tt.want)
 			}
 		})
 	}

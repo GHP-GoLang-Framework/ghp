@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"ghp/src/internal/ast"
-	"ghp/src/internal/transpiler/codegen/gen"
 )
 
 // Generate walks nodes in source order and returns the Go statements that
@@ -58,17 +57,17 @@ func generateNode(b *strings.Builder, n ast.Node) error {
 		// the import(...) block once, deduplicated.
 		return nil
 	case *ast.Text:
-		gen.Text(b, node)
+		genText(b, node)
 	case *ast.Echo:
-		gen.Echo(b, node)
+		genEcho(b, node)
 	case *ast.Statement:
-		gen.Statement(b, node)
+		genStatement(b, node)
 	case *ast.If:
-		return gen.If(b, node, generateNodes)
+		return genIf(b, node)
 	case *ast.Switch:
-		return gen.Switch(b, node, generateNodes)
+		return genSwitch(b, node)
 	case *ast.For:
-		return gen.For(b, node, generateNodes)
+		return genFor(b, node)
 	default:
 		// Every concrete type ast.Node currently seals is handled above,
 		// so this is unreachable with real data today - Node can only

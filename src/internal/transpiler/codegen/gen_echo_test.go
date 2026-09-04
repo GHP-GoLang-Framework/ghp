@@ -1,4 +1,4 @@
-package gen
+package codegen
 
 import (
 	"strings"
@@ -7,12 +7,12 @@ import (
 	"ghp/src/internal/ast"
 )
 
-func TestEcho(t *testing.T) {
+func TestGenEcho(t *testing.T) {
 	var b strings.Builder
-	Echo(&b, ast.NewEcho("user.Name", 1))
+	genEcho(&b, ast.NewEcho("user.Name", 1))
 
 	want := "io.WriteString(w, html.EscapeString(fmt.Sprint(user.Name)))\n"
 	if got := b.String(); got != want {
-		t.Errorf("Echo() = %q, want %q", got, want)
+		t.Errorf("genEcho() = %q, want %q", got, want)
 	}
 }

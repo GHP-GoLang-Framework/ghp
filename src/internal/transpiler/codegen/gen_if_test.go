@@ -1,4 +1,4 @@
-package gen
+package codegen
 
 import (
 	"strings"
@@ -7,30 +7,30 @@ import (
 	"ghp/src/internal/ast"
 )
 
-func TestIfWithoutElse(t *testing.T) {
+func TestGenIfWithoutElse(t *testing.T) {
 	var b strings.Builder
-	err := If(&b, ast.NewIf("a == b", []ast.Node{ast.NewText("yes", 2)}, nil, nil, 1), noopNodes)
+	err := genIf(&b, ast.NewIf("a == b", []ast.Node{ast.NewText("yes", 2)}, nil, nil, 1))
 	if err != nil {
-		t.Fatalf("If(): %v", err)
+		t.Fatalf("genIf(): %v", err)
 	}
 
 	want := "if a == b {\n" +
 		"io.WriteString(w, \"yes\")\n" +
 		"}\n"
 	if got := b.String(); got != want {
-		t.Errorf("If() = %q, want %q", got, want)
+		t.Errorf("genIf() = %q, want %q", got, want)
 	}
 }
 
-func TestIfWithElse(t *testing.T) {
+func TestGenIfWithElse(t *testing.T) {
 	var b strings.Builder
-	err := If(&b, ast.NewIf("a == b",
+	err := genIf(&b, ast.NewIf("a == b",
 		[]ast.Node{ast.NewText("yes", 2)},
 		nil,
 		[]ast.Node{ast.NewText("no", 3)},
-		1), noopNodes)
+		1))
 	if err != nil {
-		t.Fatalf("If(): %v", err)
+		t.Fatalf("genIf(): %v", err)
 	}
 
 	want := "if a == b {\n" +
@@ -39,18 +39,18 @@ func TestIfWithElse(t *testing.T) {
 		"io.WriteString(w, \"no\")\n" +
 		"}\n"
 	if got := b.String(); got != want {
-		t.Errorf("If() = %q, want %q", got, want)
+		t.Errorf("genIf() = %q, want %q", got, want)
 	}
 }
 
-func TestIfWithElif(t *testing.T) {
+func TestGenIfWithElif(t *testing.T) {
 	var b strings.Builder
-	err := If(&b, ast.NewIf("a == b",
+	err := genIf(&b, ast.NewIf("a == b",
 		[]ast.Node{ast.NewText("yes", 2)},
 		[]ast.ElseIf{{Cond: "c == d", Body: []ast.Node{ast.NewText("maybe", 3)}, Line: 3}},
-		nil, 1), noopNodes)
+		nil, 1))
 	if err != nil {
-		t.Fatalf("If(): %v", err)
+		t.Fatalf("genIf(): %v", err)
 	}
 
 	want := "if a == b {\n" +
@@ -59,19 +59,19 @@ func TestIfWithElif(t *testing.T) {
 		"io.WriteString(w, \"maybe\")\n" +
 		"}\n"
 	if got := b.String(); got != want {
-		t.Errorf("If() = %q, want %q", got, want)
+		t.Errorf("genIf() = %q, want %q", got, want)
 	}
 }
 
-func TestIfWithElifAndElse(t *testing.T) {
+func TestGenIfWithElifAndElse(t *testing.T) {
 	var b strings.Builder
-	err := If(&b, ast.NewIf("a == b",
+	err := genIf(&b, ast.NewIf("a == b",
 		[]ast.Node{ast.NewText("yes", 2)},
 		[]ast.ElseIf{{Cond: "c == d", Body: []ast.Node{ast.NewText("maybe", 3)}, Line: 3}},
 		[]ast.Node{ast.NewText("no", 4)},
-		1), noopNodes)
+		1))
 	if err != nil {
-		t.Fatalf("If(): %v", err)
+		t.Fatalf("genIf(): %v", err)
 	}
 
 	want := "if a == b {\n" +
@@ -82,21 +82,21 @@ func TestIfWithElifAndElse(t *testing.T) {
 		"io.WriteString(w, \"no\")\n" +
 		"}\n"
 	if got := b.String(); got != want {
-		t.Errorf("If() = %q, want %q", got, want)
+		t.Errorf("genIf() = %q, want %q", got, want)
 	}
 }
 
-func TestIfWithMultipleElif(t *testing.T) {
+func TestGenIfWithMultipleElif(t *testing.T) {
 	var b strings.Builder
-	err := If(&b, ast.NewIf("a",
+	err := genIf(&b, ast.NewIf("a",
 		[]ast.Node{ast.NewText("x", 2)},
 		[]ast.ElseIf{
 			{Cond: "b", Body: []ast.Node{ast.NewText("y", 3)}, Line: 3},
 			{Cond: "c", Body: []ast.Node{ast.NewText("z", 4)}, Line: 4},
 		},
-		nil, 1), noopNodes)
+		nil, 1))
 	if err != nil {
-		t.Fatalf("If(): %v", err)
+		t.Fatalf("genIf(): %v", err)
 	}
 
 	want := "if a {\n" +
@@ -107,30 +107,30 @@ func TestIfWithMultipleElif(t *testing.T) {
 		"io.WriteString(w, \"z\")\n" +
 		"}\n"
 	if got := b.String(); got != want {
-		t.Errorf("If() = %q, want %q", got, want)
+		t.Errorf("genIf() = %q, want %q", got, want)
 	}
 }
 
-func TestIfThenBodyError(t *testing.T) {
+func TestGenIfThenBodyError(t *testing.T) {
 	var b strings.Builder
-	err := If(&b, ast.NewIf("true", []ast.Node{nil}, nil, nil, 1), errNodes)
+	err := genIf(&b, ast.NewIf("true", []ast.Node{nil}, nil, nil, 1))
 	if err == nil {
-		t.Fatal("If() = nil error, want error from nodesFn")
+		t.Fatal("genIf() = nil error, want error from generateNodes")
 	}
 }
 
-func TestIfElseBodyError(t *testing.T) {
+func TestGenIfElseBodyError(t *testing.T) {
 	var b strings.Builder
-	err := If(&b, ast.NewIf("true", nil, nil, []ast.Node{nil}, 1), errNodes)
+	err := genIf(&b, ast.NewIf("true", nil, nil, []ast.Node{nil}, 1))
 	if err == nil {
-		t.Fatal("If() = nil error, want error from nodesFn")
+		t.Fatal("genIf() = nil error, want error from generateNodes")
 	}
 }
 
-func TestIfElifBodyError(t *testing.T) {
+func TestGenIfElifBodyError(t *testing.T) {
 	var b strings.Builder
-	err := If(&b, ast.NewIf("true", nil, []ast.ElseIf{{Cond: "false", Body: []ast.Node{nil}, Line: 1}}, nil, 1), errNodes)
+	err := genIf(&b, ast.NewIf("true", nil, []ast.ElseIf{{Cond: "false", Body: []ast.Node{nil}, Line: 1}}, nil, 1))
 	if err == nil {
-		t.Fatal("If() = nil error, want error from nodesFn")
+		t.Fatal("genIf() = nil error, want error from generateNodes")
 	}
 }
