@@ -1,10 +1,10 @@
-// Package lint validates Conventional Commit messages. It reproduces the
-// rules the repository used to enforce through commitlint, so the git
+// Package commitmsg validates Conventional Commit messages. It reproduces
+// the rules the repository used to enforce through commitlint, so the git
 // commit-msg hook can run it without needing Node.js.
 //
 // The whole commit message is accepted; only the header (first line) is
 // checked, matching how conventional commits are treated by commitlint.
-package lint
+package commitmsg
 
 import (
 	"fmt"

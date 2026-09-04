@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 
-	"ghp/src/internal/lint"
+	"ghp/src/internal/commitmsg"
 )
 
 func main() {
@@ -46,7 +46,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	// Only the header (first line) is validated; the body may span many
 	// lines, so pass just the first line to Message.Validate.
 	header, _, _ := strings.Cut(string(data), "\n")
-	if msg := (lint.Message{Header: header}).Validate(); msg != "" {
+	if msg := (commitmsg.Message{Header: header}).Validate(); msg != "" {
 		fmt.Fprintln(stderr, msg)
 		return 1
 	}
