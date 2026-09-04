@@ -66,7 +66,7 @@ Each test type runs in a separate job, all required by the `gate` job:
 ## Conventions when writing a test
 
 - **Table-driven tests** are the standard for multiple cases in the same function (see `src/cmd/ghp/main_test.go` → `TestRun`) — a `[]struct{...}` with `name`, inputs, and expected outputs, iterated with `t.Run(tt.name, ...)`.
-- Test against `io.Writer`/explicit input, never against `os.Stdout`/`os.Args` globals directly — that is what makes the function testable without hacks (see `run(args []string, stdout io.Writer) int` in `src/cmd/ghp/main.go`).
+- Test against `io.Writer`/explicit input, never against `os.Stdout`/`os.Args` globals directly — that is what makes the function testable without hacks (see `run(args []string, stdout io.Writer) int` in `src/cmd/ghp/cli.go`).
 - `t.Helper()` in every test helper function, to point the error at the right line.
 - Integration/e2e tests **never run in `-short` mode**: they start with the guard `if testing.Short() { t.Skip(...) }`.
 - Integration/e2e tests still **do not really exist** — the files in `src/test/integration/` and `src/test/e2e/` today only have a `TestPlaceholder` with `t.Skip(...)`, pointing to the Linear issue that will replace the skip with a real test (GHP-13, GHP-14, GHP-15).
