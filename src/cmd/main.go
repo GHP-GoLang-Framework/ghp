@@ -9,6 +9,14 @@ import (
 	"ghp/src/internal/build"
 )
 
+// version is the build version, injected at release time via
+// -ldflags "-X main.version=<tag>"; plain `go build` runs report "dev".
+var version = "dev"
+
+func main() {
+	os.Exit(run(os.Args[1:], os.Stdout))
+}
+
 // run executes the ghp command and returns the exit code — separated from
 // main() so it can be tested without killing the test process with os.Exit.
 func run(args []string, stdout io.Writer) int {
@@ -24,6 +32,8 @@ func run(args []string, stdout io.Writer) int {
 		return Build(args[1:])
 	case "help":
 		printUsage()
+	case "version", "--version":
+		fmt.Fprintln(stdout, version)
 	default:
 		printUsage()
 		return 2
@@ -42,6 +52,7 @@ func printUsage() {
 	Commands:
 	  dev [dir]    Start the dev server with live reload
 	  build [dir]  Build the project into <dir>/build
+	  version      Print the version (release tag, or "dev" on source builds)
 	  help         Show this help message
 
 	Run 'ghp help' for more information.`)

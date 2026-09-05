@@ -8,7 +8,7 @@ The unit vs integration/e2e split uses no build tag: Go resolves everything with
 
 | Type | Where it lives | How it runs | Why |
 | --- | --- | --- | --- |
-| Unit | `*_test.go` next to the code (e.g.: `src/cmd/ghp/main_test.go`) | `go test -short ./src/...` | Same package as the tested code — accesses unexported functions directly, no need to export anything just to test. Always runs in short mode. |
+| Unit | `*_test.go` next to the code (e.g.: `src/cmd/main_test.go`) | `go test -short ./src/...` | Same package as the tested code — accesses unexported functions directly, no need to export anything just to test. Always runs in short mode. |
 | Integration | `src/test/integration/*_test.go` | `go test ./src/...` | External package — exercises multiple packages together or calls `go build` for real. Skipped in `-short` mode. |
 | E2E | `src/test/e2e/*_test.go` | `go test ./src/...` (or `go test ./src/test/e2e/...` with `GHP_BINARY` set) | Runs against the already-compiled `ghp` binary. Skipped in `-short` mode. |
 
@@ -34,7 +34,7 @@ go vet ./src/...                  # static analysis
 go test -short ./src/... -race    # only fast tests (skips integration/e2e)
 go test ./src/test/integration/... -race
 go test ./src/test/e2e/...        # needs the compiled binary (see below)
-go build -o bin/ghp ./src/cmd/ghp # builds the binary used by the e2e tests
+go build -o bin/ghp ./src/cmd # builds the binary used by the e2e tests
 ```
 
 Or, through the Makefile:
@@ -47,7 +47,7 @@ make test-e2e   # builds bin/ghp first, then runs the e2e tests
 make coverage   # full run + enforces the 90% minimum
 ```
 
-The e2e tests call the compiled `ghp` binary (via `GHP_BINARY`), not the source directly — hence `go build -o bin/ghp ./src/cmd/ghp` first. Today they are placeholders that always skip (GHP-14/15).
+The e2e tests call the compiled `ghp` binary (via `GHP_BINARY`), not the source directly — hence `go build -o bin/ghp ./src/cmd` first. Today they are placeholders that always skip (GHP-14/15).
 
 ## Coverage
 
@@ -73,8 +73,8 @@ Each test type runs in a separate job, all required by the `gate` job:
 
 ## Conventions when writing a test
 
-- **Table-driven tests** are the standard for multiple cases in the same function (see `src/cmd/ghp/main_test.go` → `TestRun`) — a `[]struct{...}` with `name`, inputs, and expected outputs, iterated with `t.Run(tt.name, ...)`.
-- Test against `io.Writer`/explicit input, never against `os.Stdout`/`os.Args` globals directly — that is what makes the function testable without hacks (see `run(args []string, stdout io.Writer) int` in `src/cmd/ghp/cli.go`).
+- **Table-driven tests** are the standard for multiple cases in the same function (see `src/cmd/main_test.go` → `TestRunDispatch`) — a `[]struct{...}` with `name`, inputs, and expected outputs, iterated with `t.Run(tt.name, ...)`.
+- Test against `io.Writer`/explicit input, never against `os.Stdout`/`os.Args` globals directly — that is what makes the function testable without hacks (see `run(args []string, stdout io.Writer) int` in `src/cmd/main.go`). The one exception is `main()` itself, whose `os.Exit` cannot run in-process: `TestMainExitsWithUsage` re-executes the test binary (`os.Args[0]`) with a marker env var so the child hits the real exit path.
 - `t.Helper()` in every test helper function, to point the error at the right line.
 - Integration/e2e tests **never run in `-short` mode**: they start with the guard `if testing.Short() { t.Skip(...) }`.
 - Integration/e2e tests still **do not really exist** — the files in `src/test/integration/` and `src/test/e2e/` today only have a `TestPlaceholder` with `t.Skip(...)`, pointing to the Linear issue that will replace the skip with a real test (GHP-13, GHP-14, GHP-15).

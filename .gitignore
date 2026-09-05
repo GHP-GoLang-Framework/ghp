@@ -32,6 +32,7 @@ tmp/
 # Build outputs
 bin/
 /ghp
+dist/
 
 # Output directory for ghp build/dev (generated code + build artifacts)
 .ghp/

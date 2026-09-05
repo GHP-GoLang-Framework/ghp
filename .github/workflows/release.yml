@@ -3,9 +3,11 @@ name: Release
 # Covers CalVer tags (YYYY.MM.DD[.N]) pushed manually by a human —
 # e.g.: re-tagging an old commit, a one-off hotfix outside the normal flow.
 # Tags created by cd.yml use GITHUB_TOKEN, which does not trigger other
-# workflows, so cd.yml already creates its own release on that path; this
-# workflow only prevents a manual tag from ending up without a versioned image
-# and without a release.
+# workflows, so cd.yml already creates a versioned image + release there; this
+# workflow only ensures a manual tag also gets the versioned image and the
+# distribution artifacts. Both paths converge on the reusable
+# release-artifacts.yml workflow (which creates the release if it does not
+# exist yet, keep-existing otherwise).
 on:
   push:
     tags:
@@ -26,6 +28,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      image: ${{ steps.lowercase.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -34,7 +39,11 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Lowercase image name
-        run: echo "IMAGE_NAME=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+        id: lowercase
+        run: |
+          IMAGE=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=$IMAGE" >> "$GITHUB_ENV"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata
         id: meta
@@ -71,6 +80,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -78,53 +88,13 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  release:
-    name: Create GitHub Release
+  release-artifacts:
+    name: Release Artifacts
     needs: [publish-image]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version: '1.26'
-          cache: true
-
-      - name: Build multi-platform binaries
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          mkdir -p dist
-          for platform in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64; do
-            GOOS=${platform%/*}
-            GOARCH=${platform#*/}
-            ext=""
-            [ "$GOOS" = "windows" ] && ext=".exe"
-            name="ghp_${TAG}_${GOOS}_${GOARCH}"
-            echo "Building $name"
-            CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build -trimpath -ldflags="-s -w" -o "dist/ghp${ext}" ./src/cmd/ghp
-            if [ "$GOOS" = "windows" ]; then
-              (cd dist && zip -q "${name}.zip" "ghp${ext}" && rm "ghp${ext}")
-            else
-              (cd dist && tar -czf "${name}.tar.gz" "ghp${ext}" && rm "ghp${ext}")
-            fi
-          done
-          (cd dist && sha256sum * > checksums.txt)
-
-      - name: Create or update GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists — updating the binary assets."
-            gh release upload "$TAG" dist/* --clobber
-            exit 0
-          fi
-          gh release create "$TAG" --title "$TAG" --generate-notes --verify-tag dist/*
+    uses: ./.github/workflows/release-artifacts.yml
+    with:
+      tag: ${{ github.ref_name }}
+      sha: ${{ github.sha }}
+      image: ghcr.io/${{ needs.publish-image.outputs.image }}
+      digest: ${{ needs.publish-image.outputs.digest }}
+    secrets: inherit

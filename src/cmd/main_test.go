@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -45,6 +47,8 @@ func TestRunDispatch(t *testing.T) {
 		{"no args prints usage", nil, 2},
 		{"help", []string{"help"}, 0},
 		{"unknown command", []string{"bogus"}, 2},
+		{"version", []string{"version"}, 0},
+		{"--version", []string{"--version"}, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -52,6 +56,16 @@ func TestRunDispatch(t *testing.T) {
 				t.Errorf("run(%v) = %d, want %d", tt.args, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestVersionPrintsValue(t *testing.T) {
+	var buf bytes.Buffer
+	if got := run([]string{"version"}, &buf); got != 0 {
+		t.Errorf("run(version) = %d, want 0", got)
+	}
+	if got, want := buf.String(), version+"\n"; got != want {
+		t.Errorf("version output = %q, want %q", got, want)
 	}
 }
 
@@ -119,5 +133,34 @@ func TestGetPathDefaultsToCwd(t *testing.T) {
 	// The package dir has no go.mod, so the default "." must fail cleanly.
 	if _, err := getPath(nil); err == nil {
 		t.Error("getPath() with no args in the package dir should fail")
+	}
+}
+
+// TestMainExitsWithUsage covers the os.Exit path that is untestable in-process
+// (calling main() directly would kill the test runner). It re-executes the test
+// binary as a subprocess with a marker env var so the child calls main() for
+// real and terminates after printing usage. os.Args[0] is the only way to reach
+// main() — the documented exception to the "no os.Args globals" convention.
+func TestMainExitsWithUsage(t *testing.T) {
+	if os.Getenv("GHP_TEST_MAIN") == "1" {
+		main()
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestMainExitsWithUsage$")
+	cmd.Env = append(os.Environ(), "GHP_TEST_MAIN=1")
+	out, err := cmd.CombinedOutput()
+
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("main() should os.Exit, got: %v", err)
+	}
+	if got, want := exitErr.ExitCode(), 2; got != want {
+		t.Errorf("main() exit code = %d, want %d (usage)", got, want)
+	}
+	for _, want := range []string{"Usage:", "dev [dir]", "build [dir]", "version"} {
+		if !bytes.Contains(out, []byte(want)) {
+			t.Errorf("main() output missing %q:\n%s", want, out)
+		}
 	}
 }
