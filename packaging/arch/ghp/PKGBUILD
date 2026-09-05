@@ -1,0 +1,32 @@
+# Maintainer: GHP maintainers <maintainers@ghp.dev>
+# Static backup of the PKGBUILD goreleaser generates and pushes to AUR on
+# every release (aur_sources in .goreleaser.yml). Only used for manual rebuilds;
+# the live source of truth is .goreleaser.yml.
+pkgname=ghp
+pkgdesc="GHP toolchain — PHP-style templates with real embedded Go"
+url="https://github.com/GHP-GoLang-Framework/ghp"
+pkgver=replace-me
+pkgrel=1
+arch=('x86_64' 'aarch64')
+license=('MIT')
+makedepends=('go>=1.26' 'git')
+source=("${url}/releases/download/${pkgver}/ghp-${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "${srcdir}/ghp-${pkgver}"
+  go mod download
+}
+
+build() {
+  cd "${srcdir}/ghp-${pkgver}"
+  export CGO_ENABLED=0
+  export GOFLAGS="-trimpath -mod=readonly -modcacherw"
+  go build -ldflags="-s -w -X main.version=${pkgver}" -o ghp ./src/cmd
+}
+
+package() {
+  cd "${srcdir}/ghp-${pkgver}"
+  install -Dm755 ./ghp "${pkgdir}/usr/bin/ghp"
+  install -Dm644 ./LICENSE "${pkgdir}/usr/share/licenses/ghp/LICENSE"
+}
