@@ -10,15 +10,15 @@ Thanks for your interest in contributing. This document covers the essentials to
 
 ## Setting up the local environment
 
-Prerequisites: Go (version from [`go.mod`](go.mod)). No Node.js needed — the toolchain is 100% Go.
+Prerequisites: Go (version from [`go.mod`](go.mod)). No Node.js needed — the toolchain is Go + POSIX shell.
 
 ```bash
 git clone https://github.com/GHP-GoLang-Framework/GHP.git
 cd GHP
-git config core.hooksPath .githooks   # enables the git hooks
+make setup   # enables the git hooks
 ```
 
-This activates `pre-commit` (gofmt + `go vet` on the staged Go files) and `commit-msg` (validates the commit message via the Go `gitlint` command).
+This activates `pre-commit` (gofmt + `go vet` on the staged Go files) and `commit-msg` (validates the commit message via a POSIX shell script built into the hook).
 
 ## Making a change
 
@@ -29,10 +29,10 @@ git checkout -b feat/name-of-the-change
 
 # ... edit, commit ...
 
-gofmt -l ./src                    # no output = formatted
-go vet ./src/...                  # static analysis
-go test -short ./src/... -race    # unit tests (skips integration/e2e)
-go test ./src/test/integration/... -race   # what CI will run anyway
+# Everything CI runs, in one place (see the Makefile — make help lists all):
+make lint
+make test         # = make test-short, the fast unit tests
+make test-integration   # what CI will run anyway
 
 git push -u origin feat/name-of-the-change
 gh pr create --base main --title "feat(scope): description in the imperative"
@@ -48,7 +48,7 @@ type(optional scope): short description in the imperative
 
 Accepted types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`. The PR title follows the same pattern — it is revalidated in CI and becomes the squash commit message on merge.
 
-Recommended scope: the affected domain/package (`parser`, `codegen`, `pages`, `build`, `commitmsg`, `cli`, `docker`, `docs`...), never the file name.
+Recommended scope: the affected domain/package (`parser`, `codegen`, `pages`, `build`, `cli`, `docker`, `docs`...), never the file name.
 
 ## Code quality
 

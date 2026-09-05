@@ -4,7 +4,7 @@ How GHP organizes and runs tests: unit, integration, e2e, and coverage — all v
 
 ## Where each test lives
 
-The unit vs integration/e2e split uses no build tag and no Makefile: Go resolves everything with `go test ./src/...`. The fast/slow split is done with the native `-short` flag (`testing.Short()`):
+The unit vs integration/e2e split uses no build tag: Go resolves everything with `go test ./src/...` (the Makefile at the repo root just wraps the same commands). The fast/slow split is done with the native `-short` flag (`testing.Short()`):
 
 | Type | Where it lives | How it runs | Why |
 | --- | --- | --- | --- |
@@ -22,11 +22,11 @@ if testing.Short() {
 }
 ```
 
-So `go test -short ./src/...` runs only the fast ones and `go test ./src/...` runs everything, without needing a tag or a Makefile.
+So `go test -short ./src/...` runs only the fast ones and `go test ./src/...` runs everything, without needing a build tag.
 
 ## Running locally
 
-No Makefile — plain Go commands (the same ones CI runs):
+Everything CI runs is wrapped in the repo [`Makefile`](../Makefile) — `make help` lists the targets. The flat Go commands are:
 
 ```bash
 gofmt -l ./src                    # no output = formatted
@@ -37,14 +37,22 @@ go test ./src/test/e2e/...        # needs the compiled binary (see below)
 go build -o bin/ghp ./src/cmd/ghp # builds the binary used by the e2e tests
 ```
 
-`go test ./src/... -race` runs everything, including integration/e2e.
+Or, through the Makefile:
+
+```bash
+make lint       # gofmt check + go vet
+make test       # = make test-short, the fast unit tests
+make test-full  # everything, including integration/e2e
+make test-e2e   # builds bin/ghp first, then runs the e2e tests
+make coverage   # full run + enforces the 90% minimum
+```
 
 The e2e tests call the compiled `ghp` binary (via `GHP_BINARY`), not the source directly — hence `go build -o bin/ghp ./src/cmd/ghp` first. Today they are placeholders that always skip (GHP-14/15).
 
 ## Coverage
 
 - Minimum required: **90%**, computed over the whole `./src/...` (`-coverpkg=./src/...` guarantees coverage counts even when the test lives in an external package like `src/test/integration`).
-- Local command:
+- Local command (also wrapped as `make coverage`, which enforces the minimum):
   `go test ./src/... -coverprofile=coverage.out -covermode=atomic -coverpkg=./src/...`
   then check with `go tool cover -func=coverage.out | tail -1` — the same calculation the `coverage` job in `ci.yml` does.
 - The report also goes up to Codecov (`codecov.yml` defines the same 90% as target for `project` and `patch`).
