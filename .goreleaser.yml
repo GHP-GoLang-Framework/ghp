@@ -1,0 +1,124 @@
+# GoReleaser drives every release: archives, checksums, .deb/.rpm packages,
+# AUR PKGBUILDs and the GitHub Release itself. Used by the reusable
+# release-artifacts.yml workflow (see .github/workflows/).
+# Validate with `goreleaser check`, dry-run locally with
+# `goreleaser release --snapshot --clean`.
+
+version: 2
+
+project_name: ghp
+
+builds:
+  - id: ghp
+    main: ./src/cmd
+    binary: ghp
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - id: ghp
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    # Only the bare binary goes in the archive (matches the old release tarballs).
+    files:
+      - none*
+
+# The source archive, also served as a release asset and consumed by the "ghp"
+# AUR source package.
+source:
+  enabled: true
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+nfpms:
+  - id: ghp
+    package_name: ghp
+    vendor: GHP-GoLang-Framework
+    homepage: https://github.com/GHP-GoLang-Framework/ghp
+    maintainer: GHP maintainers <maintainers@ghp.dev>
+    description: |-
+      GHP toolchain — PHP-style templates with real embedded Go.
+      Compiles .ghp files straight into net/http handlers.
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    contents:
+      - src: ./LICENSE
+        dst: /usr/share/licenses/ghp/LICENSE
+
+release:
+  mode: keep-existing
+
+changelog:
+  use: github-native
+
+# Prebuilt binary AUR package. goreleaser enforces the "-bin" suffix, builds
+# the PKGBUILD from the linux_amd64 archive and pushes it to AUR (private_key
+# is from the AUR_SSH_KEY secret). Skipped on snapshots or when the secret is
+# missing, so local dry-runs and secret-less CD runs stay green.
+aurs:
+  - name: ghp-bin
+    homepage: https://github.com/GHP-GoLang-Framework/ghp
+    description: GHP toolchain — PHP-style templates with real embedded Go (prebuilt)
+    maintainers:
+      - GHP maintainers <maintainers@ghp.dev>
+    license: MIT
+    private_key: '{{ .Env.AUR_SSH_KEY }}'
+    git_url: ssh://aur@aur.archlinux.org/ghp-bin.git
+    disable: '{{ if .IsSnapshot }}true{{ else }}{{ if isEnvSet "AUR_SSH_KEY" }}false{{ else }}true{{ end }}{{ end }}'
+    package: |-
+      install -Dm755 ./ghp "${pkgdir}/usr/bin/ghp"
+
+# Source AUR package: downloads the source archive asset and builds with Go,
+# so it also covers arm64 and any platform AUR builders provide.
+aur_sources:
+  - name: ghp
+    homepage: https://github.com/GHP-GoLang-Framework/ghp
+    description: GHP toolchain — PHP-style templates with real embedded Go
+    maintainers:
+      - GHP maintainers <maintainers@ghp.dev>
+    license: MIT
+    arches:
+      - x86_64
+      - aarch64
+    private_key: '{{ .Env.AUR_SSH_KEY }}'
+    git_url: ssh://aur@aur.archlinux.org/ghp.git
+    makedepends:
+      - go
+      - git
+    disable: '{{ if .IsSnapshot }}true{{ else }}{{ if isEnvSet "AUR_SSH_KEY" }}false{{ else }}true{{ end }}{{ end }}'
+    prepare: |-
+      cd "${srcdir}/ghp-${pkgver}"
+      go mod download
+    build: |-
+      cd "${srcdir}/ghp-${pkgver}"
+      export CGO_ENABLED=0
+      export GOFLAGS="-trimpath -mod=readonly -modcacherw"
+      go build -ldflags="-s -w -X main.version=${pkgver}" -o ghp ./src/cmd
+    package: |-
+      cd "${srcdir}/ghp-${pkgver}"
+      install -Dm755 ./ghp "${pkgdir}/usr/bin/ghp"
+      install -Dm644 ./LICENSE "${pkgdir}/usr/share/licenses/ghp/LICENSE"
+
+# The generated PKGBUILDs live in docs form under packaging/arch/ as a manual
+# backup; goreleaser is the live source of truth on every release.
