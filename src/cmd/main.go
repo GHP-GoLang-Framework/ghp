@@ -9,6 +9,10 @@ import (
 	"ghp/src/internal/build"
 )
 
+func main() {
+	os.Exit(run(os.Args[1:], os.Stdout))
+}
+
 // run executes the ghp command and returns the exit code — separated from
 // main() so it can be tested without killing the test process with os.Exit.
 func run(args []string, stdout io.Writer) int {
