@@ -157,6 +157,23 @@ jobs:
       - name: Build
         run: go build ./src/...
 
+  goreleaser-check:
+    name: GoReleaser Config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          install-only: true
+
+      - name: Validate .goreleaser.yml
+        run: goreleaser check
+
   vscode-extension:
     name: VSCode Extension
     runs-on: ubuntu-latest
@@ -227,6 +244,7 @@ jobs:
       - e2e-tests
       - coverage
       - build
+      - goreleaser-check
       - vscode-extension
       - govulncheck
       - gitleaks

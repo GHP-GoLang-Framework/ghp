@@ -1,0 +1,129 @@
+name: Release Artifacts
+
+# Reusable workflow that turns an already-tagged commit into every published
+# distribution artifact. Both cd.yml (automatic CalVer release after a green
+# merge) and release.yml (manual CalVer tag) converge here so there is a
+# single source of truth for producing them.
+#
+# Caller contract:
+#   - `tag`  : the CalVer tag to release (GORELEASER_CURRENT_TAG). The tag/git
+#              object is created by the caller, not here.
+#   - `sha`  : the exact commit to release (checked out here).
+#   - `image`: lowercase GHCR image name to retag with `tag` + `latest`.
+#   - `digest`: manifest digest of that image (retagged, no rebuild).
+#
+# Callers must pass `secrets: inherit` (AUR_SSH_KEY, GHP_APT_TOKEN) and have
+# `contents: write` + `packages: write` permissions on their own workflow.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      sha:
+        required: true
+        type: string
+      image:
+        required: true
+        type: string
+      digest:
+        required: true
+        type: string
+    secrets:
+      AUR_SSH_KEY:
+        required: false
+      GHP_APT_TOKEN:
+        required: false
+    outputs:
+      release_url:
+        description: URL of the created GitHub Release
+        value: ${{ jobs.artifacts.outputs.release_url }}
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  artifacts:
+    name: Build & publish artifacts
+    runs-on: ubuntu-latest
+    outputs:
+      release_url: ${{ steps.release.outputs.url }}
+    steps:
+      - name: Checkout the exact released commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Set up GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          install-only: true
+
+      # GORELEASER_CURRENT_TAG makes goreleaser attach the artifacts to the
+      # existing release (created by the caller) instead of deriving a tag from
+      # git history; the release already exists, so mode: keep-existing keeps
+      # the caller's title/notes intact.
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ inputs.tag }}
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+
+      - name: Capture release URL
+        id: release
+        run: |
+          URL=$(gh release view "${{ inputs.tag }}" --json url -q .url)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger apt repository build
+        # The ghp-apt repo consumes the .deb artifacts; the dispatch secret is
+        # optional, so the step is skipped on calls lacking it.
+        env:
+          GHP_APT_TOKEN: ${{ secrets.GHP_APT_TOKEN }}
+        if: ${{ env.GHP_APT_TOKEN != '' }}
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ env.GHP_APT_TOKEN }}
+          repository: GHP-GoLang-Framework/ghp-apt
+          event-type: release
+          client-payload: >-
+            {"url": "${{ steps.release.outputs.url }}",
+             "tag": "${{ inputs.tag }}"}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retag versioned image by digest
+        # The image was already built and scanned by the caller; here we only
+        # alias it (by digest, no rebuild) with the CalVer version and latest.
+        run: |
+          docker buildx imagetools create \
+            -t "${{ inputs.image }}:${{ inputs.tag }}" \
+            -t "${{ inputs.image }}:latest" \
+            "${{ inputs.image }}@${{ inputs.digest }}"
