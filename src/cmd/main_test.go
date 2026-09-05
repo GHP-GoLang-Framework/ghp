@@ -45,6 +45,8 @@ func TestRunDispatch(t *testing.T) {
 		{"no args prints usage", nil, 2},
 		{"help", []string{"help"}, 0},
 		{"unknown command", []string{"bogus"}, 2},
+		{"version", []string{"version"}, 0},
+		{"--version", []string{"--version"}, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -52,6 +54,16 @@ func TestRunDispatch(t *testing.T) {
 				t.Errorf("run(%v) = %d, want %d", tt.args, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestVersionPrintsValue(t *testing.T) {
+	var buf bytes.Buffer
+	if got := run([]string{"version"}, &buf); got != 0 {
+		t.Errorf("run(version) = %d, want 0", got)
+	}
+	if got, want := buf.String(), version+"\n"; got != want {
+		t.Errorf("version output = %q, want %q", got, want)
 	}
 }
 

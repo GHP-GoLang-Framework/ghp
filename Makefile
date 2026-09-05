@@ -5,11 +5,13 @@ GO          := go
 BIN         := bin
 COVERAGE    := coverage.out
 COVERAGE_MIN:= 90
+VERSION     ?= dev
 
 .PHONY: help setup fmt lint vet \
 	test test-short test-full test-integration test-e2e \
 	coverage coverage-html \
 	build build-all \
+	release-check release-snapshot \
 	vscode-test \
 	gate clean
 
@@ -62,12 +64,18 @@ coverage: ## Full test run with coverage + enforce the 90% minimum
 coverage-html: coverage ## Open the per-line coverage report in a browser
 	$(GO) tool cover -html=$(COVERAGE)
 
-build: ## Build the ghp binary into bin/
+build: ## Build the ghp binary into bin/ (VERSION is injected via ldflags)
 	mkdir -p $(BIN)
-	$(GO) build -o $(BIN)/ghp ./src/cmd
+	$(GO) build -ldflags "-X main.version=$(VERSION)" -o $(BIN)/ghp ./src/cmd
 
 build-all: ## Compile every package (same as the CI Build job)
 	$(GO) build ./src/...
+
+release-check: ## Validate .goreleaser.yml (requires goreleaser, see docs/installation.md)
+	goreleaser check
+
+release-snapshot: ## Dry-run a full release locally (requires goreleaser)
+	goreleaser release --snapshot --clean
 
 vscode-test: ## Run the VS Code extension tests (editors/vscode, npm)
 	cd editors/vscode && npm test
