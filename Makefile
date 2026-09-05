@@ -64,7 +64,7 @@ coverage-html: coverage ## Open the per-line coverage report in a browser
 
 build: ## Build the ghp binary into bin/
 	mkdir -p $(BIN)
-	$(GO) build -o $(BIN)/ghp ./src/cmd/ghp
+	$(GO) build -o $(BIN)/ghp ./src/cmd
 
 build-all: ## Compile every package (same as the CI Build job)
 	$(GO) build ./src/...

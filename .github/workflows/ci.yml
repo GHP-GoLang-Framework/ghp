@@ -99,7 +99,7 @@ jobs:
           cache: true
 
       - name: Build ghp binary
-        run: go build -o bin/ghp ./src/cmd/ghp
+        run: go build -o bin/ghp ./src/cmd
 
       - name: Run e2e tests
         run: go test ./src/test/e2e/...

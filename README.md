@@ -63,7 +63,7 @@ There is no published binary or `go install` yet — that is part of the work in
 ```bash
 git clone https://github.com/GHP-GoLang-Framework/GHP.git
 cd GHP
-go build -o bin/ghp ./src/cmd/ghp
+go build -o bin/ghp ./src/cmd
 ```
 
 A Docker image is also published on every merge to `main`: `edge` is the continuous build (the tip of development), and a versioned CalVer tag (`YYYY.MM.DD[.N]`) + `latest` are created automatically right after — every green merge is already a release.

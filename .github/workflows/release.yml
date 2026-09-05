@@ -108,7 +108,7 @@ jobs:
             [ "$GOOS" = "windows" ] && ext=".exe"
             name="ghp_${TAG}_${GOOS}_${GOARCH}"
             echo "Building $name"
-            CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build -trimpath -ldflags="-s -w" -o "dist/ghp${ext}" ./src/cmd/ghp
+            CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH go build -trimpath -ldflags="-s -w" -o "dist/ghp${ext}" ./src/cmd
             if [ "$GOOS" = "windows" ]; then
               (cd dist && zip -q "${name}.zip" "ghp${ext}" && rm "ghp${ext}")
             else
