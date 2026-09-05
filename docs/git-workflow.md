@@ -39,9 +39,10 @@ How to contribute to GHP: branch, commit, PR, and review.
 4. Run locally before opening the PR (it is what CI will run anyway):
 
    ```bash
-   gofmt -l ./src && go vet ./src/... && go test -short ./src/... -race
-   go test ./src/test/integration/... -race
+   make lint && make test-full && make coverage
    ```
+
+   Or the single `make gate` (lint + full tests + coverage + build). `make help` lists every target.
 
 5. Push the branch and open the PR against `main`:
 

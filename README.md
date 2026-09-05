@@ -78,15 +78,14 @@ docker run --rm ghcr.io/ghp-golang-framework/ghp:latest help
 ```bash
 git clone https://github.com/GHP-GoLang-Framework/GHP.git
 cd GHP
-git config core.hooksPath .githooks  # enables the git hooks (no Node needed)
-gofmt -l ./src  # no output = formatted
-go vet ./src/...
-go test -short ./src/... -race     # unit (skips integration/e2e)
-go test ./src/... -race            # everything, including integration/e2e
-go build -o bin/ghp ./src/cmd/ghp  # builds the binary
+make setup  # enables the git hooks (no Node needed)
+make lint
+make test
+make build        # builds the ghp binary into bin/
+make coverage     # full run, enforces the 90% minimum
 ```
 
-Coverage (minimum required: 90%): `go test ./src/... -coverprofile=coverage.out -covermode=atomic -coverpkg=./src/...` and then `go tool cover -func=coverage.out`. Details in [`docs/testing.md`](docs/testing.md).
+All developer commands live in the [`Makefile`](Makefile) (mirroring what CI runs) — `make help` lists them. Coverage minimum is 90%; details in [`docs/testing.md`](docs/testing.md).
 
 ## Documentation
 
