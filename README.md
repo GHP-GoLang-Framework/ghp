@@ -1,8 +1,8 @@
 # GHP
 
-[![CI](https://github.com/GHP-GoLang-Framework/GHP/actions/workflows/ci.yml/badge.svg)](https://github.com/GHP-GoLang-Framework/GHP/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/GHP-GoLang-Framework/GHP/branch/main/graph/badge.svg)](https://codecov.io/gh/GHP-GoLang-Framework/GHP)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/GHP-GoLang-Framework/GHP)](go.mod)
+[![CI](https://github.com/GHP-GoLang-Framework/ghp/actions/workflows/ci.yml/badge.svg)](https://github.com/GHP-GoLang-Framework/ghp/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/GHP-GoLang-Framework/ghp/branch/main/graph/badge.svg)](https://codecov.io/gh/GHP-GoLang-Framework/ghp)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/GHP-GoLang-Framework/ghp)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 PHP-style templates, backed by real Go.
@@ -58,26 +58,36 @@ Routing is per file: `pages/index.ghp` becomes `/`, `pages/blog/[slug].ghp` beco
 
 ## Installation
 
-There is no published binary or `go install` yet — that is part of the work in progress. For now, build from source:
+Every green merge to `main` already produces a CalVer release
+(`YYYY.MM.DD[.N]`) with container images, binary archives and packages. Pick
+the channel that fits:
 
-```bash
-git clone https://github.com/GHP-GoLang-Framework/GHP.git
-cd GHP
-go build -o bin/ghp ./src/cmd
-```
+| Channel | What you get |
+| --- | --- |
+| [Docker image](https://github.com/GHP-GoLang-Framework/ghp/pkgs/container/ghp) | `ghcr.io/ghp-golang-framework/ghp` — `edge` (tip of `main`), CalVer tag + `latest` |
+| [AUR `ghp` / `ghp-bin`](https://aur.archlinux.org/packages/ghp) | Arch Linux (source build or prebuilt archive) |
+| [Debian/Ubuntu `.deb`](https://github.com/GHP-GoLang-Framework/ghp/releases) | For the `ghp-apt` apt repository (not provisioned yet) |
+| [Fedora `.rpm` / COPR](https://github.com/GHP-GoLang-Framework/ghp/releases) | For the COPR repository (not provisioned yet) |
+| [GitHub Release assets](https://github.com/GHP-GoLang-Framework/ghp/releases) | `checksums.txt`, archives, `.deb`/`.rpm` — direct download |
 
-A Docker image is also published on every merge to `main`: `edge` is the continuous build (the tip of development), and a versioned CalVer tag (`YYYY.MM.DD[.N]`) + `latest` are created automatically right after — every green merge is already a release.
+See [`docs/installation.md`](docs/installation.md) for the full instructions
+for every path. Right now the simplest routes are Docker and the AUR:
 
 ```bash
 docker pull ghcr.io/ghp-golang-framework/ghp:latest
-docker run --rm ghcr.io/ghp-golang-framework/ghp:latest help
+docker run --rm ghcr.io/ghp-golang-framework/ghp:latest version
+
+yay -S ghp           # Arch Linux (or ghp-bin), then `ghp version`
 ```
+
+No `go install` yet. Building from source is also documented in
+[`docs/installation.md`](docs/installation.md).
 
 ## Developing GHP
 
 ```bash
-git clone https://github.com/GHP-GoLang-Framework/GHP.git
-cd GHP
+git clone https://github.com/GHP-GoLang-Framework/ghp.git
+cd ghp
 make setup  # enables the git hooks (no Node needed)
 make lint
 make test
@@ -90,6 +100,7 @@ All developer commands live in the [`Makefile`](Makefile) (mirroring what CI run
 ## Documentation
 
 - [`docs/template.ghp`](docs/template.ghp) — full syntax reference.
+- [`docs/installation.md`](docs/installation.md) — how to install/release GHP on every platform.
 - [`docs/testing.md`](docs/testing.md) — how the tests (unit/integration/e2e) are organized and run.
 - [`docs/git-workflow.md`](docs/git-workflow.md) — branch, commit, and Pull Request flow.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to contribute.
