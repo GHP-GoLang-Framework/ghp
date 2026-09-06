@@ -44,7 +44,7 @@ func TestProjectSuccess(t *testing.T) {
 	writeFile(t, src, "about.ghp", "<h1>About</h1>\n")
 	writeFile(t, src, "blog/index.ghp", "<h1>Blog</h1>\n")
 
-	if err := Project(src); err != nil {
+	if err := Project(src, "", ""); err != nil {
 		t.Fatalf("Project: %v", err)
 	}
 
@@ -73,7 +73,7 @@ func TestProjectFailedPage(t *testing.T) {
 	writeFile(t, src, "about.ghp", "<h1>About</h1>\n")
 	writeFile(t, src, "broken.ghp", "<go:if n == 1/>\n")
 
-	err := Project(src)
+	err := Project(src, "", "")
 	if err == nil {
 		t.Fatal("expected failure when a page does not transpile")
 	}
@@ -98,7 +98,7 @@ func TestProjectRoutesWriteError(t *testing.T) {
 		t.Fatalf("mkdir: %v", err)
 	}
 
-	if err := Project(src); err == nil {
+	if err := Project(src, "", ""); err == nil {
 		t.Fatal("expected error when routes cannot be written")
 	}
 }
@@ -108,7 +108,7 @@ func TestProjectCompileError(t *testing.T) {
 	writeFile(t, src, "main.go", "package main\nfunc\n")
 	writeFile(t, src, "about.ghp", "<h1>About</h1>\n")
 
-	err := Project(src)
+	err := Project(src, "", "")
 	if err == nil {
 		t.Fatal("expected compile error")
 	}
@@ -126,8 +126,43 @@ func TestStageWalkError(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chmod(locked, 0o755) })
 
-	if _, err := stage(src); err == nil {
+	if _, err := Stage(src); err == nil {
 		t.Fatal("expected error walking an unreadable dir")
+	}
+}
+
+func TestProjectEntryWritesRoutesToEntry(t *testing.T) {
+	src := minProject(t)
+	writeFile(t, src, "about.ghp", "<h1>About</h1>\n")
+
+	entry := filepath.Join(src, "cli")
+	writeFile(t, entry, "main.go", "package main\nfunc main() {}\n")
+	writeFile(t, entry, "about.ghp", "<h1>About</h1>\n")
+	out := filepath.Join(src, "bin", "ghp-server")
+	if err := Project(src, entry, out); err != nil {
+		t.Fatalf("Project: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(entry, "ghproutes.go")); err != nil {
+		t.Errorf("ghproutes.go not written to entry dir: %v", err)
+	}
+	if _, err := os.Stat(out); err != nil {
+		t.Errorf("binary not at custom output %s: %v", out, err)
+	}
+}
+
+func TestProjectDefaultOutputIsAppAtRoot(t *testing.T) {
+	src := minProject(t)
+	writeFile(t, src, "about.ghp", "<h1>About</h1>\n")
+
+	if err := Project(src, "", ""); err != nil {
+		t.Fatalf("Project: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(src, "app")); err != nil {
+		t.Errorf("default binary <src>/app missing: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(src, "ghproutes.go")); err != nil {
+		t.Errorf("default ghproutes <src>/ghproutes.go missing: %v", err)
 	}
 }
 

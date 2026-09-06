@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -108,31 +109,94 @@ func TestDevSuccess(t *testing.T) {
 	}
 }
 
-func TestGetPath(t *testing.T) {
-	ok := minProject(t)
-	got, err := getPath([]string{ok})
-	if err != nil {
-		t.Fatalf("getPath(ok dir) = %v", err)
+func TestResolveParameters(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    ghpParameters
+		wantErr string
+	}{
+		{"loose path sets project", []string{"site"}, ghpParameters{projectPath: "site"}, ""},
+		{"project flag", []string{"-p", "site"}, ghpParameters{projectPath: "site"}, ""},
+		{"project flag equals form", []string{"--project=site"}, ghpParameters{projectPath: "site"}, ""},
+		{"output flag", []string{"-o", "bin/app"}, ghpParameters{output: "bin/app"}, ""},
+		{"output equals form", []string{"--output=bin/app"}, ghpParameters{output: "bin/app"}, ""},
+		{"entry point flag", []string{"-e", "cli"}, ghpParameters{entryPointDir: "cli"}, ""},
+		{"entry point equals form", []string{"--entry-point=cmd/server"}, ghpParameters{entryPointDir: "cmd/server"}, ""},
+		{"mixed flags and loose path", []string{"-o", "bin/app", "site"}, ghpParameters{projectPath: "site", output: "bin/app"}, ""},
+		{"flag value may start with dash", []string{"-o", "-net"}, ghpParameters{output: "-net"}, ""},
+		{"duplicate project path", []string{"site", "other"}, ghpParameters{}, "set twice"},
+		{"project flag plus loose path", []string{"-p", "site", "other"}, ghpParameters{}, "set twice"},
+		{"missing value", []string{"-o"}, ghpParameters{}, "missing value"},
+		{"unknown flag", []string{"--bogus", "x"}, ghpParameters{}, "unknown flag"},
 	}
-	if got != ok {
-		t.Errorf("getPath = %q, want %q", got, ok)
-	}
-
-	if _, err := getPath([]string{t.TempDir()}); err == nil {
-		t.Error("getPath(dir without go.mod) should fail")
-	}
-
-	noMain := t.TempDir()
-	writeFile(t, noMain, "go.mod", "module example.com/site\n\ngo 1.26\n")
-	if _, err := getPath([]string{noMain}); err == nil {
-		t.Error("getPath(dir without main.go) should fail")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := resolveParameters(tt.args)
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("resolveParameters(%v) error = %v, want containing %q", tt.args, err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("resolveParameters(%v) = %v", tt.args, err)
+			}
+			if got != tt.want {
+				t.Errorf("resolveParameters(%v) = %+v, want %+v", tt.args, got, tt.want)
+			}
+		})
 	}
 }
 
-func TestGetPathDefaultsToCwd(t *testing.T) {
+func TestResolveBuildPaths(t *testing.T) {
+	proj := minProject(t)
+	entry := filepath.Join(proj, "cli")
+	writeFile(t, entry, "main.go", "package main\n")
+
+	src, gotEntry, output, err := resolveBuildPaths(ghpParameters{projectPath: proj})
+	if err != nil {
+		t.Fatalf("resolveBuildPaths(project): %v", err)
+	}
+	if src != proj {
+		t.Errorf("src = %q, want %q", src, proj)
+	}
+	if gotEntry != proj {
+		t.Errorf("entry default = %q, want project root %q", gotEntry, proj)
+	}
+	if want := filepath.Join(proj, "app"); output != want {
+		t.Errorf("output default = %q, want %q", output, want)
+	}
+
+	out := filepath.Join(proj, "bin", "server")
+	src, gotEntry, output, err = resolveBuildPaths(ghpParameters{projectPath: proj, entryPointDir: entry, output: out})
+	if err != nil {
+		t.Fatalf("resolveBuildPaths(all): %v", err)
+	}
+	if gotEntry != entry {
+		t.Errorf("entry = %q, want %q", gotEntry, entry)
+	}
+	if output != out {
+		t.Errorf("output = %q, want %q", output, out)
+	}
+
+	if _, _, _, err := resolveBuildPaths(ghpParameters{projectPath: t.TempDir()}); err == nil {
+		t.Error("resolveBuildPaths(dir without go.mod) should fail")
+	}
+
+	noMain := minProject(t)
+	if err := os.Remove(filepath.Join(noMain, "main.go")); err != nil {
+		t.Fatalf("remove main.go: %v", err)
+	}
+	if _, _, _, err := resolveBuildPaths(ghpParameters{projectPath: noMain}); err == nil {
+		t.Error("resolveBuildPaths(dir without main.go) should fail")
+	}
+}
+
+func TestResolveBuildPathsDefaultsToCwd(t *testing.T) {
 	// The package dir has no go.mod, so the default "." must fail cleanly.
-	if _, err := getPath(nil); err == nil {
-		t.Error("getPath() with no args in the package dir should fail")
+	if _, _, _, err := resolveBuildPaths(ghpParameters{}); err == nil {
+		t.Error("resolveBuildPaths() with no args in the package dir should fail")
 	}
 }
 
@@ -158,7 +222,7 @@ func TestMainExitsWithUsage(t *testing.T) {
 	if got, want := exitErr.ExitCode(), 2; got != want {
 		t.Errorf("main() exit code = %d, want %d (usage)", got, want)
 	}
-	for _, want := range []string{"Usage:", "dev [dir]", "build [dir]", "version"} {
+	for _, want := range []string{"Usage:", "build [flags]", "version", "-o, --output"} {
 		if !bytes.Contains(out, []byte(want)) {
 			t.Errorf("main() output missing %q:\n%s", want, out)
 		}
