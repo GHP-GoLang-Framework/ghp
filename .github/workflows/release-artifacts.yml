@@ -70,7 +70,7 @@ jobs:
           cache: true
 
       - name: Set up GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: '~> v2'
@@ -81,7 +81,7 @@ jobs:
       # git history; the release already exists, so mode: keep-existing keeps
       # the caller's title/notes intact.
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: '~> v2'
