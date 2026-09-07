@@ -103,7 +103,7 @@ jobs:
         env:
           GHP_APT_TOKEN: ${{ secrets.GHP_APT_TOKEN }}
         if: ${{ env.GHP_APT_TOKEN != '' }}
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ env.GHP_APT_TOKEN }}
           repository: GHP-GoLang-Framework/ghp-apt
