@@ -131,6 +131,27 @@ func TestStageWalkError(t *testing.T) {
 	}
 }
 
+func TestStageCopiesGoSum(t *testing.T) {
+	src := t.TempDir()
+	writeFile(t, src, "go.mod", "module example.com/site\n\ngo 1.26\n")
+	writeFile(t, src, "go.sum", "example.com/dep v1.0.0 h1:abcd=\n")
+	writeFile(t, src, "about.ghp", "<h1>About</h1>\n")
+
+	tmpDir, err := stage(src)
+	if err != nil {
+		t.Fatalf("stage: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	got, err := os.ReadFile(filepath.Join(tmpDir, "go.sum"))
+	if err != nil {
+		t.Fatalf("go.sum not staged: %v", err)
+	}
+	if string(got) != "example.com/dep v1.0.0 h1:abcd=\n" {
+		t.Errorf("staged go.sum = %q, want original content preserved", got)
+	}
+}
+
 func TestReadModule(t *testing.T) {
 	dir := t.TempDir()
 	gomod := filepath.Join(dir, "go.mod")
