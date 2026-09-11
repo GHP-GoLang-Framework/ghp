@@ -57,9 +57,11 @@ func Project(src string) error {
 }
 
 // stage copies the buildable set of src into a fresh temp dir: every .ghp
-// page, every .go file and the root go.mod, preserving their relative
-// layout. Only directories that contain such files are recreated. Ex: src
-// blog/about.ghp -> tmp/blog/about.ghp.
+// page, every .go file and the root go.mod/go.sum, preserving their
+// relative layout. Only directories that contain such files are recreated.
+// go.sum travels with go.mod so `go build` can verify checksums for any
+// project with real third-party dependencies, not just the standard
+// library. Ex: src blog/about.ghp -> tmp/blog/about.ghp.
 func stage(src string) (string, error) {
 	tmpDir, err := os.MkdirTemp("", "ghp-stage-*")
 	if err != nil {
@@ -75,7 +77,7 @@ func stage(src string) (string, error) {
 		}
 
 		name := d.Name()
-		if filepath.Ext(name) != ".ghp" && filepath.Ext(name) != ".go" && name != "go.mod" {
+		if filepath.Ext(name) != ".ghp" && filepath.Ext(name) != ".go" && name != "go.mod" && name != "go.sum" {
 			return nil
 		}
 
