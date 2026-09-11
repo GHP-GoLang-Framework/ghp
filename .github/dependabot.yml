@@ -27,20 +27,6 @@ updates:
       prefix: "chore"
       include: "scope"
 
-  # VSCode extension — own package.json, not covered by the root npm.
-  - package-ecosystem: "npm"
-    directory: "/editors/vscode"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "automated"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
