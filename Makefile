@@ -12,7 +12,6 @@ VERSION     ?= dev
 	coverage coverage-html \
 	build build-all \
 	release-check release-snapshot \
-	vscode-test \
 	gate clean
 
 help: ## List all targets with a short description
@@ -76,9 +75,6 @@ release-check: ## Validate .goreleaser.yml (requires goreleaser, see docs/instal
 
 release-snapshot: ## Dry-run a full release locally (requires goreleaser)
 	goreleaser release --snapshot --clean
-
-vscode-test: ## Run the VS Code extension tests (editors/vscode, npm)
-	cd editors/vscode && npm test
 
 gate: lint test-full coverage build-all ## Everything the CI gate checks
 
