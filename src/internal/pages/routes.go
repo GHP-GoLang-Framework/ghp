@@ -32,9 +32,10 @@ func NewServer() *http.ServeMux {
 
 // GenRoutes returns the Go source for ghproutes.go, which registers every
 // page in pages on a ServeMux through AddRoutes. Pages in a subdirectory
-// are imported as <module>/<RelDir> and referenced as PkgName.FuncName;
-// pages at the root live in package main. Only the GET method is emitted
-// for now. Ex: module "example.com/site", blog/[slug].ghp ->
+// (PkgName other than "main") are imported as <module>/<RelDir> and
+// referenced as PkgName.FuncName; pages of the main package live in it and
+// are referenced unqualified. Only the GET method is emitted for now.
+// Ex: module "example.com/site", blog/[slug].ghp ->
 // mux.HandleFunc("GET /blog/{slug}", blog.BlogSlug).
 func GenRoutes(pages []*Page, module string) string {
 	imports := map[string]bool{}
@@ -42,7 +43,7 @@ func GenRoutes(pages []*Page, module string) string {
 
 	for _, p := range pages {
 		handler := p.FuncName
-		if p.RelDir != "" {
+		if p.PkgName != "main" {
 			handler = p.PkgName + "." + p.FuncName
 			imports[module+"/"+p.RelDir] = true
 		}
