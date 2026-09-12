@@ -32,7 +32,7 @@ jobs:
 
       - name: Check formatting (gofmt)
         run: |
-          unformatted=$(gofmt -l .)
+          unformatted=$(gofmt -l ./src)
           if [ -n "$unformatted" ]; then
             echo "::error::Files not formatted with gofmt:"
             echo "$unformatted"

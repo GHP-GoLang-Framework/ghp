@@ -3,10 +3,15 @@
 FROM golang:1.26-alpine AS builder
 WORKDIR /src
 
+# Only the module files plus the two package trees the binary imports are
+# copied in; the explicit paths replace .dockerignore, which is no longer
+# needed.
+
 COPY go.mod go.sum* ./
 RUN go mod download
 
-COPY . .
+COPY src/cmd ./src/cmd
+COPY src/internal ./src/internal
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/ghp ./src/cmd
 
 FROM gcr.io/distroless/static-debian12:nonroot AS runner
