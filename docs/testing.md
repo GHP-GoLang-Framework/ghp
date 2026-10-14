@@ -47,7 +47,7 @@ make test-e2e   # builds bin/ghp first, then runs the e2e tests
 make coverage   # full run + enforces the 90% minimum
 ```
 
-The e2e tests call the compiled `ghp` binary (via `GHP_BINARY`), not the source directly — hence `go build -o bin/ghp ./src/cmd` first. Today they are placeholders that always skip (GHP-14/15).
+The e2e tests call the compiled `ghp` binary (via `GHP_BINARY`), not the source directly — hence `go build -o bin/ghp ./src/cmd` first. They are still placeholders that always skip (GHP-14/15); the integration suite already covers the parser→codegen→`go build` pipeline.
 
 ## Coverage
 
@@ -77,7 +77,7 @@ Each test type runs in a separate job, all required by the `gate` job:
 - Test against `io.Writer`/explicit input, never against `os.Stdout`/`os.Args` globals directly — that is what makes the function testable without hacks (see `run(args []string, stdout io.Writer) int` in `src/cmd/main.go`). The one exception is `main()` itself, whose `os.Exit` cannot run in-process: `TestMainExitsWithUsage` re-executes the test binary (`os.Args[0]`) with a marker env var so the child hits the real exit path.
 - `t.Helper()` in every test helper function, to point the error at the right line.
 - Integration/e2e tests **never run in `-short` mode**: they start with the guard `if testing.Short() { t.Skip(...) }`.
-- Integration/e2e tests still **do not really exist** — the files in `src/test/integration/` and `src/test/e2e/` today only have a `TestPlaceholder` with `t.Skip(...)`, pointing to the Linear issue that will replace the skip with a real test (GHP-13, GHP-14, GHP-15).
+- Integration/e2e tests come with the `if testing.Short() { t.Skip(...) }` guard. E2E files still only carry a placeholder (`TestPlaceholder`, GHP-14/15); the integration suite has real tests (`TestParseAssembleBuild`, `TestParseAssembleBuildElif`) that drive parser + codegen through an actual `go build`.
 
 ## Related
 

@@ -9,9 +9,15 @@ PHP-style templates, backed by real Go.
 
 GHP compiles `.ghp` files — HTML with real embedded Go — straight into `net/http` handlers, with no runtime template engine. Everything between the tags is real Go: it compiles with `go build`, errors point to the right line of the `.ghp`, and any package (standard, external, or from your own module) can be imported.
 
-## Status: active rewrite
+## Status
 
-GHP is being rewritten from scratch with a new syntax focused on DX. Today the repository only has the skeleton: the CLI is still a stub (`ghp dev`/`ghp build` do nothing real yet) and the parser/codegen for the syntax below does not exist yet. The syntax is already defined — see [`docs/template.ghp`](docs/template.ghp) — and the implementation is in progress.
+Active development. The syntax below works end to end: `ghp build`/`ghp dev`
+discover the `.ghp` pages, parse them into an AST
+(`src/internal/parser`), emit a Go handler per page
+(`src/internal/transpiler/codegen`) and compile the project into a binary.
+The implementation status of each piece and how tests are organized are in
+[`docs/testing.md`](docs/testing.md); the language reference is
+[`docs/template.ghp`](docs/template.ghp).
 
 ## The syntax (target)
 
@@ -36,6 +42,8 @@ GHP is being rewritten from scratch with a new syntax focused on DX. Today the r
 
   <go:if len(items) == 0/>
     <p>Nothing on the menu yet.</p>
+  <go:elif len(items) == 1/>
+    <p>One item on the menu.</p>
   <go:else/>
     <p>Enjoy your meal!</p>
   <go:endif/>
@@ -50,7 +58,7 @@ Every GHP tag is self-closing (ends with `/>`). Blocks with a body — `<go:if>`
 | `<go:import (...)/>` | Imports one or more packages — standard, external, or from your module. |
 | `<go .../>` | Block of Go code (statement) — can open a scope between HTML chunks. |
 | `<go= expression/>` | Renders an expression's value into the HTML, with automatic escaping. |
-| `<go:if/>` / `<go:else/>` / `<go:endif/>` | Conditional, using Go's native operators. |
+| `<go:if/>` / `<go:elif/>` / `<go:else/>` / `<go:endif/>` | Conditional, using Go's native operators. |
 | `<go:switch/>` / `<go:case/>` / `<go:default/>` / `<go:endswitch/>` | Switch. |
 | `<go:for/>` / `<go:endfor/>` | Loop — any form of `for`/`range` valid in Go. |
 

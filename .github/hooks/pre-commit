@@ -1,6 +1,6 @@
 #!/bin/sh
 # Formats only the staged .go files and re-stages them, then runs vet
-# on the whole repository (equivalent to the gofmt+tsc of the Nexo flow).
+# on the whole Go tree (see the Makefile `lint` target).
 staged_go_files=$(git diff --cached --name-only --diff-filter=ACM -- '*.go')
 
 if [ -n "$staged_go_files" ]; then

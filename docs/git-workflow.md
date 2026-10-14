@@ -14,7 +14,7 @@ How to contribute to GHP: branch, commit, PR, and review.
 
    ```bash
    git clone https://github.com/GHP-GoLang-Framework/ghp.git
-   cd GHP
+   cd ghp
    git checkout main
    git pull --ff-only origin main
    ```

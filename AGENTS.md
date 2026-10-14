@@ -6,7 +6,7 @@ Working guidelines for AI agents editing this repository. These rules are mandat
 
 - Go monorepo: commands in `src/cmd` (`ghp`), core under `src/internal` (`ast`, `parser`, `textutil`, `pages`, `build`, `transpiler/codegen`), integration/e2e under `src/test`.
 - Source of truth for the GHP language: `docs/template.ghp`.
-- Git hooks live in `.githooks/` and the toolchain has no Node: `commit-msg` is a self-contained POSIX shell validator, `pre-commit` runs gofmt + `go vet`. Developer commands are centralized in the root `Makefile` (`make help` lists them).
+- Git hooks live in `.github/hooks/` and the toolchain has no Node: `commit-msg` is a self-contained POSIX shell validator, `pre-commit` runs gofmt + `go vet`. Developer commands are centralized in the root `Makefile` (`make help` lists them).
 - VS Code extension lives under `editors/vscode` (TextMate grammar, snippets, grammar tests).
 - Read `CONTRIBUTING.md`, `docs/git-workflow.md` and `docs/testing.md` before your first change.
 

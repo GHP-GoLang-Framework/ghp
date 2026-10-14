@@ -46,8 +46,9 @@ can build a `deb`-based index. Until that repository is provisioned, install
 the `.deb` attached to the release directly:
 
 ```bash
-wget https://github.com/GHP-GoLang-Framework/ghp/releases/download/2026.09.04.1/ghp_2026.09.04.1_linux_amd64.deb
-sudo apt install ./ghp_2026.09.04.1_linux_amd64.deb
+# substitute <tag> with the CalVer you want, from the releases page
+wget https://github.com/GHP-GoLang-Framework/ghp/releases/download/<tag>/ghp_<tag>_linux_amd64.deb
+sudo apt install ./ghp_<tag>_linux_amd64.deb
 ```
 
 ## Fedora / RHEL (COPR / RPM)
@@ -57,7 +58,8 @@ from source for COPR. The COPR project is provisioned externally; until it is,
 install the `.rpm` attached to the release directly:
 
 ```bash
-sudo dnf install https://github.com/GHP-GoLang-Framework/ghp/releases/download/2026.09.04.1/ghp_2026.09.04.1_linux_amd64.rpm
+# substitute <tag> with the CalVer you want, from the releases page
+sudo dnf install https://github.com/GHP-GoLang-Framework/ghp/releases/download/<tag>/ghp_<tag>_linux_amd64.rpm
 ```
 
 ## Docker

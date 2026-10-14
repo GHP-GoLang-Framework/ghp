@@ -13,8 +13,8 @@ Thanks for your interest in contributing. This document covers the essentials to
 Prerequisites: Go (version from [`go.mod`](go.mod)). No Node.js needed — the toolchain is Go + POSIX shell.
 
 ```bash
-git clone https://github.com/GHP-GoLang-Framework/GHP.git
-cd GHP
+git clone https://github.com/GHP-GoLang-Framework/ghp.git
+cd ghp
 make setup   # enables the git hooks
 ```
 
@@ -54,7 +54,7 @@ Recommended scope: the affected domain/package (`parser`, `codegen`, `pages`, `b
 
 - `gofmt` — formatting, fixed automatically by `pre-commit`.
 - `go vet` — runs in `pre-commit` and in CI.
-- `golangci-lint` — runs in CI (job `lint`); run `golangci-lint run ./src/...` locally if you want to get ahead.
+- `golangci-lint` — currently **disabled**: no release built with Go 1.26+ exists yet (the binary built with an older Go refuses to lint this module). Once one does, re-enable the job in `ci.yml` and run `golangci-lint run ./src/...` locally to get ahead.
 - Tests covering whatever is added — see [`docs/testing.md`](docs/testing.md) for the conventions (table-driven tests, testing against `io.Writer`/explicit input instead of globals).
 
 ## Opening the PR
@@ -67,7 +67,7 @@ Recommended scope: the affected domain/package (`parser`, `codegen`, `pages`, `b
 
 ## Reporting bugs or suggesting features
 
-Open a [GitHub issue](https://github.com/GHP-GoLang-Framework/GHP/issues) describing the problem or suggestion. If it is a bug, include a minimal example that reproduces the behavior.
+Open a [GitHub issue](https://github.com/GHP-GoLang-Framework/ghp/issues) describing the problem or suggestion. If it is a bug, include a minimal example that reproduces the behavior.
 
 ## Questions
 

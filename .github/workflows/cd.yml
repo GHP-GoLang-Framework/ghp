@@ -6,7 +6,9 @@ name: CD
 # publish, not before. release.yml only covers the case of someone tagging a
 # CalVer manually (the automatic path uses GITHUB_TOKEN, which does not
 # trigger other workflows, so the versioned image + artifacts happen here).
-# Both paths converge on the reusable release-artifacts.yml workflow.
+# Both paths converge on two reusable workflows: docker-image.yml builds and
+# scans a flavor of the image, release-artifacts.yml produces the distribution
+# artifacts.
 on:
   workflow_run:
     workflows: ['CI']
@@ -17,81 +19,19 @@ permissions:
   contents: read
   packages: write
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   publish-edge-image:
     name: Publish Edge Image
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    outputs:
-      image: ${{ steps.lowercase.outputs.image }}
-      digest: ${{ steps.build.outputs.digest }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Lowercase image name
-        id: lowercase
-        # GHCR requires lowercase image names; github.repository preserves the
-        # repo's actual case (e.g.: GHP-GoLang-Framework/ghp).
-        run: |
-          IMAGE=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')
-          echo "IMAGE_NAME=$IMAGE" >> "$GITHUB_ENV"
-          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha,prefix=
-            type=raw,value=edge
-
-      - name: Build image for scanning
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          push: false
-          load: true
-          tags: ghp:scan
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ghp:scan
-          format: table
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: '1'
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        id: build
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+    uses: ./.github/workflows/docker-image.yml
+    with:
+      # Check out the exact commit the green CI run saw, not the tip of main.
+      ref: ${{ github.event.workflow_run.head_sha }}
+      # Per-push tags: the commit sha (for provenance) and the edge stream.
+      tags: |
+        type=sha,prefix=
+        type=raw,value=edge
+    secrets: inherit
 
   release:
     name: Tag & Release

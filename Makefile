@@ -19,7 +19,7 @@ help: ## List all targets with a short description
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 setup: ## Enable the git hooks (gofmt+vet on commit, Conventional Commit check on commit-msg)
-	git config core.hooksPath .githooks
+	git config core.hooksPath .github/hooks
 
 fmt: ## Reformat all Go source with gofmt
 	gofmt -w ./src
