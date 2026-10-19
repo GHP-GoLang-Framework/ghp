@@ -226,8 +226,11 @@ func buildSwitch(s *scanner, tok tagToken) (ast.Node, error) {
 	if next.kind == tagNone {
 		return nil, &SyntaxError{Line: tok.line, Message: "<go:switch> missing <go:endswitch/>"}
 	}
-	if stray := firstContent(before); stray != nil {
-		return nil, &SyntaxError{Line: stray.Line(), Message: "<go:switch> body must start with <go:case/> or <go:default/>"}
+	if hasContent(before) {
+		// The line points at the <go:switch> rather than at the stray
+		// content: a Text node reports the line it starts on, which
+		// includes the newline left over from the tag above it.
+		return nil, &SyntaxError{Line: tok.line, Message: "<go:switch> body must start with <go:case/> or <go:default/>"}
 	}
 
 	sawDefault := false
@@ -268,17 +271,17 @@ func buildSwitch(s *scanner, tok tagToken) (ast.Node, error) {
 	return sw, nil
 }
 
-// firstContent returns the first node in nodes a reader of the page would
-// actually see, skipping the whitespace-only Text nodes that are just the
-// layout between two tags.
-func firstContent(nodes []ast.Node) ast.Node {
+// hasContent reports whether nodes hold anything a reader of the page
+// would actually see, skipping the whitespace-only Text nodes that are
+// just the layout between two tags.
+func hasContent(nodes []ast.Node) bool {
 	for _, n := range nodes {
 		if text, ok := n.(*ast.Text); ok && strings.TrimSpace(text.Value) == "" {
 			continue
 		}
-		return n
+		return true
 	}
-	return nil
+	return false
 }
 
 // parseImportPaths splits a <go:import (...)/> payload into its individual
@@ -309,11 +312,11 @@ func parseImportPaths(payload string) ([]ast.ImportPath, error) {
 			// written on one line with nothing between them - reading
 			// them as a single one would silently invent an alias out
 			// of the first path, so it is reported instead.
-			return nil, fmt.Errorf("<go:import> %q is not a single import path (use one path per line, or separate them with commas)", item)
+			return nil, fmt.Errorf("<go:import> %s is not a single import path (use one path per line, or separate them with commas)", item)
 		}
 
 		if strings.ContainsAny(alias, `"'`) {
-			return nil, fmt.Errorf("<go:import> alias %q cannot be quoted", alias)
+			return nil, fmt.Errorf("<go:import> alias %s cannot be quoted", alias)
 		}
 
 		paths = append(paths, ast.ImportPath{Alias: alias, Path: strings.Trim(path, `"`)})
