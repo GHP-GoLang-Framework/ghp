@@ -47,7 +47,7 @@ func run(args []string, stdout io.Writer) int {
 
 func printUsage() {
 	fmt.Println(`
-	GHP - Good Hygiene Practices
+	GHP - Golang Hyper Processor
 
 	Usage:
 	  ghp build [flags] [path]

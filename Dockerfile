@@ -17,7 +17,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/ghp ./src/cmd
 FROM gcr.io/distroless/static-debian12:nonroot AS runner
 
 LABEL org.opencontainers.image.title="ghp" \
-      org.opencontainers.image.description="GHP toolchain — PHP-style templates with real embedded Go" \
+      org.opencontainers.image.description="Golang Hyper Processor (GHP) toolchain — PHP-style templates with real embedded Go" \
       org.opencontainers.image.source="https://github.com/GHP-GoLang-Framework/ghp"
 
 COPY --from=builder /out/ghp /usr/local/bin/ghp
