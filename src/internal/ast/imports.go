@@ -32,7 +32,7 @@ func CollectImports(nodes []Node) (map[string]ImportPath, error) {
 
 	declared := declaredImports(nodes)
 	if imp := nestedImport(nodes); imp != nil {
-		return nil, fmt.Errorf("<go:import> on line %d is not at the top level of the file - conditional imports do not exist in Go", imp.Line())
+		return nil, fmt.Errorf("line %d: <go:import> is not at the top level of the file - conditional imports do not exist in Go", imp.Line())
 	}
 
 	first := make(map[string]aliasOf, len(declared))
@@ -41,10 +41,10 @@ func CollectImports(nodes []Node) (map[string]ImportPath, error) {
 		// default name, so an alias on top of one of them would leave
 		// the alias with nothing to refer to.
 		if managed[d.Path] && d.Alias != "" {
-			return nil, fmt.Errorf("%q is managed automatically by the page and cannot be imported with an alias (%q)", d.Path, d.Alias)
+			return nil, fmt.Errorf("line %d: %q is managed automatically by the page and cannot be imported with an alias (%q)", d.line, d.Path, d.Alias)
 		}
 		if prev, ok := first[d.Path]; ok && prev.alias != d.Alias {
-			return nil, fmt.Errorf("%q is imported with different aliases (%q on line %d, %q on line %d)", d.Path, prev.alias, prev.line, d.Alias, d.line)
+			return nil, fmt.Errorf("line %d: %q is imported with alias %q, but line %d already imports it with %q", d.line, d.Path, d.Alias, prev.line, prev.alias)
 		}
 		if _, ok := first[d.Path]; !ok {
 			first[d.Path] = aliasOf{alias: d.Alias, line: d.line}
