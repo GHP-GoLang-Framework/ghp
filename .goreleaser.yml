@@ -56,7 +56,7 @@ nfpms:
     homepage: https://github.com/GHP-GoLang-Framework/ghp
     maintainer: GHP maintainers <maintainers@ghp.dev>
     description: |-
-      GHP toolchain — PHP-style templates with real embedded Go.
+      Golang Hyper Processor (GHP) toolchain — PHP-style templates with real embedded Go.
       Compiles .ghp files straight into net/http handlers.
     license: MIT
     formats:
@@ -79,7 +79,7 @@ changelog:
 aurs:
   - name: ghp-bin
     homepage: https://github.com/GHP-GoLang-Framework/ghp
-    description: GHP toolchain — PHP-style templates with real embedded Go (prebuilt)
+    description: Golang Hyper Processor (GHP) toolchain — PHP-style templates with real embedded Go (prebuilt)
     maintainers:
       - GHP maintainers <maintainers@ghp.dev>
     license: MIT
@@ -94,7 +94,7 @@ aurs:
 aur_sources:
   - name: ghp
     homepage: https://github.com/GHP-GoLang-Framework/ghp
-    description: GHP toolchain — PHP-style templates with real embedded Go
+    description: Golang Hyper Processor (GHP) toolchain — PHP-style templates with real embedded Go
     maintainers:
       - GHP maintainers <maintainers@ghp.dev>
     license: MIT

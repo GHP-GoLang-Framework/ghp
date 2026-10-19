@@ -1,4 +1,4 @@
-# GHP
+# GHP — Golang Hyper Processor
 
 [![CI](https://github.com/GHP-GoLang-Framework/ghp/actions/workflows/ci.yml/badge.svg)](https://github.com/GHP-GoLang-Framework/ghp/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/GHP-GoLang-Framework/ghp/branch/main/graph/badge.svg)](https://codecov.io/gh/GHP-GoLang-Framework/ghp)
