@@ -60,7 +60,7 @@ How to contribute to GHP: branch, commit, PR, and review.
 ## What happens after merge
 
 - The merge to `main` triggers CI again and, if green, publishes a Docker `edge` image to the GitHub Container Registry.
-- Right after, a release is created **automatically**: a CalVer tag for the day (`YYYY.MM.DD[.N]`), a versioned Docker image, and a GitHub Release with notes generated from the commits. No manual action needed — every green merge to `main` is already a release.
+- Right after, a release is created **automatically**: a CalVer tag for the day (`YYYY.MM.DD[+N]`), a versioned Docker image, and a GitHub Release with notes generated from the commits. No manual action needed — every green merge to `main` is already a release.
 
 ## What will not work
 

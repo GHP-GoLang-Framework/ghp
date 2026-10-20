@@ -2,7 +2,7 @@
 
 GHP is distributed from the [releases](https://github.com/GHP-GoLang-Framework/ghp/releases)
 of this repository. Every merge to `main` that passes CI becomes a release
-automatically (CalVer tag `YYYY.MM.DD[.N]`), and every CalVer tag gets:
+automatically (CalVer tag `YYYY.MM.DD[+N]`), and every CalVer tag gets:
 
 - container images on `ghcr.io/ghp-golang-framework/ghp` (`<tag>` + `latest`,
   plus `edge` for the continuous build)
