@@ -238,3 +238,16 @@ func TestAssembleInvalidFuncNameFails(t *testing.T) {
 		t.Fatal("Assemble() = nil error, want error for invalid funcName")
 	}
 }
+
+func TestAssembleUnsupportedNodeFails(t *testing.T) {
+	// A node Generate has no generator for has to fail Assemble too,
+	// instead of the rest of the file being written around it - see
+	// TestGenerateErrorsOnUnsupportedNode for the same guard at the
+	// Generate level.
+	prog := &ast.Program{Nodes: []ast.Node{nil}}
+
+	_, err := Assemble("pages", "Index", prog)
+	if err == nil {
+		t.Fatal("Assemble() = nil error, want unsupported node type error")
+	}
+}

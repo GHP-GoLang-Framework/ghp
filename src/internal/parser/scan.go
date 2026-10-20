@@ -6,7 +6,7 @@ import (
 )
 
 // scanner walks over the source one tag/text run at a time, tracking the
-// current byte offset and 1-base line number so nodes cna report where
+// current byte offset and 1-based line number so nodes can report where
 // they came from
 type scanner struct {
 	src  string
@@ -22,7 +22,7 @@ func (s *scanner) eof() bool {
 	return s.pos >= len(s.src)
 }
 
-// advance moves pos foward by n bytes, keeping line in sync with any
+// advance moves pos forward by n bytes, keeping line in sync with any
 // newlines skipped over.
 func (s *scanner) advance(n int) {
 	s.line += strings.Count(s.src[s.pos:s.pos+n], "\n")
@@ -40,8 +40,8 @@ type tagToken struct {
 
 // nextText consumes source up to (but not including) the next '<' that
 // opens a recognized GHP tag, and return it as a Text node. ok is false
-// when there's no text before EOF or the netx tag - i.e a tag follows
-// immediately, or the source is already exhauted.
+// when there's no text before EOF or the next tag - i.e a tag follows
+// immediately, or the source is already exhausted.
 func (s *scanner) nextText() (node *ast.Text, ok bool) {
 	start := s.pos
 	startLine := s.line
@@ -65,7 +65,7 @@ func (s *scanner) nextText() (node *ast.Text, ok bool) {
 	return ast.NewText(s.src[start:s.pos], startLine), true
 }
 
-// nextTagToken asusmes s.pos sits on the '<' of a recognized tag (the
+// nextTagToken assumes s.pos sits on the '<' of a recognized tag (the
 // caller checks this via matchTagHead, as nextText already does) and
 // consumes through the closing '/>', returning the tag's kind, payload and
 // starting line.

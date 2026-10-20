@@ -67,18 +67,12 @@ This example illustrates the intended template syntax. Refer to [`docs/template.
 | `<go:switch/>`, `<go:case/>`, `<go:default/>`, `<go:endswitch/>` | Switch control flow. |
 | `<go:for/>`, `<go:endfor/>` | Loop control flow. |
 
-GHP tags are self-closing. Block tags are paired with their corresponding closing tags, such as `<go:endif/>` and `<go:endfor/>`.
+`net/http` is always imported, and `fmt`/`html`/`io` are added when the page
+actually echoes or prints — no need to declare them. Importing one of them
+under an alias is rejected, since the generated code calls them by their
+default name.
 
-`net/http` is always imported, and `fmt`/`html`/`io` are added when the page actually echoes or prints — there is no need to declare them. Importing one of them under an alias is rejected, since the generated code calls them by their default name.
-
-## Routing
-
-Routing is derived from page paths. For example:
-
-| Page | Route |
-| --- | --- |
-| `pages/index.ghp` | `/` |
-| `pages/blog/[slug].ghp` | `/blog/{slug}` |
+Routing is per file: `pages/index.ghp` becomes `/`, `pages/blog/[slug].ghp` becomes `/blog/{slug}`.
 
 ## Installation
 

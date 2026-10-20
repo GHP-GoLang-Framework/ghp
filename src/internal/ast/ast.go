@@ -115,6 +115,14 @@ var _ Node = (*For)(nil)
 // top-level nodes, in source order.
 type Program struct {
 	Nodes []Node
+
+	// Imports is the deduplicated set of packages the generated handler
+	// needs, keyed by import path - the ones GHP brings on its own
+	// (net/http for the signature, fmt/html/io for what the echo and
+	// text emitters generate) plus every <go:import (...)/> the page
+	// declared. Ex: {"fmt": {Path: "fmt"}, "strings": {Alias: "s",
+	// Path: "strings"}}. See CollectImports.
+	Imports map[string]ImportPath
 }
 
 func NewText(value string, line int) *Text {
