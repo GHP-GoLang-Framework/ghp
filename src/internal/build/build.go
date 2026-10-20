@@ -63,7 +63,10 @@ func Compile(src, stagedDir, entry, output string) error {
 		return fmt.Errorf("entry point %q is outside the project %q", entry, src)
 	}
 
-	projectPages := pages.Discover(stagedDir)
+	projectPages, err := pages.Discover(stagedDir)
+	if err != nil {
+		return err
+	}
 	// Pages under the entry dir belong to the main package: Go allows a
 	// single package per dir, so entry-top pages join it (PkgName main) and
 	// subdirs keep their own package while the route sheds the entry prefix.

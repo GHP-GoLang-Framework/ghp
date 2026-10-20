@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"ghp/src/internal/goimports"
 )
 
 // genRoute pairs a ServeMux route with the handler that serves it.
@@ -55,28 +57,18 @@ func GenRoutes(pages []*Page, module string) string {
 	return fmt.Sprintf(ghpRoutesTmpl, importBlock(imports), routeBlock(routes))
 }
 
-// importBlock renders the import(...) block, or a single import when
-// net/http is the only path. Ex: {"a/b", "net/http"} ->
+// importBlock renders the import declaration of ghproutes.go: net/http for
+// the ServeMux handler signature, plus one path per imported subdirectory
+// page. The always-present net/http means a site with no subdirectory page
+// still gets the one-line form. Ex: {"a/b"} ->
 // "import (\n\t\"a/b\"\n\t\"net/http\"\n)".
 func importBlock(imports map[string]bool) string {
-	imps := make([]string, 0, len(imports)+1)
-	imps = append(imps, "net/http")
+	specs := make([]goimports.Import, 0, len(imports)+1)
+	specs = append(specs, goimports.Import{Path: "net/http"})
 	for imp := range imports {
-		imps = append(imps, imp)
+		specs = append(specs, goimports.Import{Path: imp})
 	}
-	sort.Strings(imps)
-
-	if len(imps) == 1 {
-		return fmt.Sprintf("import %q", imps[0])
-	}
-
-	lines := make([]string, 0, len(imps)+2)
-	lines = append(lines, "import (")
-	for _, imp := range imps {
-		lines = append(lines, "\t"+fmt.Sprintf("%q", imp))
-	}
-	lines = append(lines, ")")
-	return strings.Join(lines, "\n")
+	return goimports.Compact(specs)
 }
 
 // routeBlock renders one mux.HandleFunc call per route, sorted by path.
