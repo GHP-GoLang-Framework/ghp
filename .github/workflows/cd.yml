@@ -130,6 +130,14 @@ jobs:
     name: Release Artifacts
     needs: [publish-edge-image, release]
     uses: ./.github/workflows/release-artifacts.yml
+    # A reusable workflow may only keep or reduce the caller's
+    # permissions, never raise them, and release-artifacts.yml declares
+    # contents: write. Without this the whole run is rejected before it
+    # starts ("is only allowed 'contents: read'"), which left CD broken
+    # on every push. Grant it here, on the one job that needs it.
+    permissions:
+      contents: write
+      packages: write
     with:
       tag: ${{ needs.release.outputs.tag }}
       sha: ${{ needs.release.outputs.sha }}
