@@ -34,6 +34,12 @@ jobs:
     name: Release Artifacts
     needs: [publish-image]
     uses: ./.github/workflows/release-artifacts.yml
+    # Same requirement as in cd.yml: the reusable workflow declares
+    # contents: write and cannot raise the caller's permissions, so the
+    # job that calls it must grant them.
+    permissions:
+      contents: write
+      packages: write
     with:
       tag: ${{ github.ref_name }}
       sha: ${{ github.sha }}
