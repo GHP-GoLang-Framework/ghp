@@ -17,8 +17,47 @@ env:
   COVERAGE_MIN: '90'
 
 jobs:
+  # Decides whether the suite is worth running. A PR that only touches
+  # docs or config pays nothing, but the push to main always reports
+  # true: a squash there can carry Go changes from several branches, and
+  # main is where a bad merge has to be caught.
+  changes:
+    name: Detect Go changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      go: ${{ steps.filter.outputs.go }}
+    steps:
+      - name: Check which files the PR changed
+        id: filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          files=$(gh api --paginate \
+            "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename')
+
+          # .go anywhere, or go.mod/go.sum at any depth. Deps from a
+          # go.sum-only bump still change how the tests behave.
+          if printf '%s\n' "$files" | grep -qE '\.go$|(^|/)go\.(mod|sum)$'; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          fi
+
   lint:
     name: Lint & Vet
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -55,6 +94,8 @@ jobs:
 
   unit-tests:
     name: Unit Tests
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -71,6 +112,8 @@ jobs:
 
   integration-tests:
     name: Integration Tests
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -87,6 +130,8 @@ jobs:
 
   e2e-tests:
     name: E2E Tests
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -108,6 +153,8 @@ jobs:
 
   coverage:
     name: Coverage (min 90%)
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -143,6 +190,8 @@ jobs:
 
   build:
     name: Build
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -176,6 +225,8 @@ jobs:
 
   govulncheck:
     name: Vulnerability Scan (govulncheck)
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -216,6 +267,7 @@ jobs:
   gate:
     name: CI Gate
     needs:
+      - changes
       - lint
       - unit-tests
       - integration-tests
