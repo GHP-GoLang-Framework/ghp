@@ -13,6 +13,17 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    # x/term and x/text ship together and always landed as two PRs to
+    # review back to back (#57/#58, #54/#55). One PR per release train
+    # is one CI run and one review. Majors stay out of the group on
+    # purpose: they may carry breaking changes worth their own PR.
+    groups:
+      golang-org-x:
+        patterns:
+          - "golang.org/x/*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "npm"
     directory: "/"
