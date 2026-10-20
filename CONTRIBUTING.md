@@ -12,7 +12,7 @@ Read these documents before changing the code:
 
 ## Development environment
 
-Install the Go version declared in [`go.mod`](go.mod). The core toolchain uses Go and POSIX shell. Node.js is only needed when working on the VS Code extension.
+Install the Go version declared in [`go.mod`](go.mod). The toolchain uses Go and POSIX shell.
 
 Clone the repository and enable the Git hooks:
 
@@ -77,8 +77,6 @@ Keep the subject concise and within the repository's enforced length limit. Expl
 - Follow the integration and end-to-end test conventions in [`docs/testing.md`](docs/testing.md).
 - The CI pipeline currently requires at least 90% coverage. Check the testing guide for how coverage is measured.
 - The `golangci-lint` job may be disabled depending on the available Go toolchain. Check the current CI configuration rather than assuming it is enabled.
-
-When changing the VS Code extension, run its tests from `editors/vscode` using the commands documented in that directory. Node.js dependencies are not required for ordinary Go-only changes.
 
 ## Opening a pull request
 

@@ -7,7 +7,6 @@ Guidelines for AI agents working in this repository. Follow these rules unless t
 - GHP is a Go monorepo. The CLI lives in `src/cmd`; core packages live under `src/internal`, including the AST, parser, page discovery, build pipeline, and code generation.
 - Integration and end-to-end tests live under `src/test`.
 - `docs/template.ghp` is the source of truth for GHP template syntax.
-- The VS Code extension lives in `editors/vscode` and contains the TextMate grammar, snippets, and grammar tests.
 - Git hooks live in `.github/hooks`. The hooks use POSIX shell; the repository's main toolchain is Go.
 - Developer commands are defined in the root `Makefile`. Run `make help` to see the available targets.
 
@@ -18,7 +17,7 @@ Before making a change, read `CONTRIBUTING.md`, `docs/git-workflow.md`, and `doc
 - Write new source code comments, GoDoc, documentation, commit messages, pull-request titles, and pull-request descriptions in English.
 - Do not write new PT-BR content anywhere. Existing PT-BR content is known debt: migrate it only in dedicated `docs:` or `refactor:` pull requests, never inside feature changes.
 - Keep documentation consistent with the actual implementation. `docs/template.ghp` defines the language syntax.
-- When behavior or syntax changes, update the relevant documentation, including `README.md`, `docs/`, or `editors/` as appropriate.
+- When behavior or syntax changes, update the relevant documentation, including `README.md` or `docs/` as appropriate.
 - Avoid broad documentation migrations in feature changes. Keep unrelated cleanup separate.
 
 ## Git workflow
@@ -57,7 +56,7 @@ Before making a change, read `CONTRIBUTING.md`, `docs/git-workflow.md`, and `doc
   go test ./src/...
   ```
 
-- Use the Makefile targets when available, since they mirror CI. Run `npm test` from `editors/vscode` when changing the VS Code extension and its tests.
+- Use the Makefile targets when available, since they mirror CI.
 - If a check cannot be run, state that clearly and explain why. Do not claim that unrun checks passed.
 
 ## Repository hygiene
