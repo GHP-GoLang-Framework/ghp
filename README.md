@@ -62,6 +62,11 @@ Every GHP tag is self-closing (ends with `/>`). Blocks with a body — `<go:if>`
 | `<go:switch/>` / `<go:case/>` / `<go:default/>` / `<go:endswitch/>` | Switch. |
 | `<go:for/>` / `<go:endfor/>` | Loop — any form of `for`/`range` valid in Go. |
 
+`net/http` is always imported, and `fmt`/`html`/`io` are added when the page
+actually echoes or prints — no need to declare them. Importing one of them
+under an alias is rejected, since the generated code calls them by their
+default name.
+
 Routing is per file: `pages/index.ghp` becomes `/`, `pages/blog/[slug].ghp` becomes `/blog/{slug}`.
 
 ## Installation

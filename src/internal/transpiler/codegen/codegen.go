@@ -10,8 +10,9 @@
 //     this output
 //
 // Wiring the function signature, those imports and the final import(...)
-// block together (collecting every *ast.Import in the file) is the job of
-// whoever assembles the full .go file, not this package.
+// block together (the package set ast.CollectImports resolved while the
+// page was parsed) is the job of whoever assembles the full .go file,
+// not this package.
 package codegen
 
 import (

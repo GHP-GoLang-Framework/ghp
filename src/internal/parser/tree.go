@@ -30,6 +30,17 @@ func (k tagKind) String() string {
 	return "unknown tag"
 }
 
+// The stop sets parseNodes pauses on are shared instead of rebuilt per
+// call: they are only ever read, and a <go:for>/<go:if>/<go:switch> in a
+// deep tree would otherwise allocate one map each.
+var (
+	stopEndFor    = map[tagKind]bool{tagCloseFor: true}
+	stopEndIf     = map[tagKind]bool{tagCloseIf: true}
+	stopElifOrEnd = map[tagKind]bool{tagElif: true, tagElse: true, tagCloseIf: true}
+	stopElseBody  = map[tagKind]bool{tagElif: true, tagCloseIf: true}
+	stopEndSwitch = map[tagKind]bool{tagCase: true, tagDefault: true, tagCloseSwitch: true}
+)
+
 // parseNodes parses a sequence of nodes until EOF or one of the stop kinds
 // is reached. The stop tag itself is consumed from the scanner but not
 // turned into a node - it's returned to the caller instead, so callers
@@ -82,27 +93,57 @@ func buildNode(s *scanner, tok tagToken) (ast.Node, error) {
 		return ast.NewStatement(tok.payload, tok.line), nil
 
 	case tagEcho:
+		// An empty <go= /> would generate fmt.Sprint() - valid Go that
+		// renders an empty string, so the typo would go unnoticed.
+		if tok.payload == "" {
+			return nil, &SyntaxError{Line: tok.line, Message: "<go=> requires an expression"}
+		}
 		return ast.NewEcho(tok.payload, tok.line), nil
 
 	case tagIf:
+		// Checked here, before the body is read, so the report points
+		// at the <go:if> itself even when the body is what's broken.
+		if tok.payload == "" {
+			return nil, &SyntaxError{Line: tok.line, Message: "<go:if> requires a condition"}
+		}
 		return buildIf(s, tok)
 
 	case tagSwitch:
 		return buildSwitch(s, tok)
 
 	case tagFor:
-		body, close, err := parseNodes(s, map[tagKind]bool{tagCloseFor: true})
+		// An empty <go:for/> compiles into `for {}` - an infinite loop
+		// that builds clean and hangs the request, so it has to be
+		// caught here.
+		if tok.payload == "" {
+			return nil, &SyntaxError{Line: tok.line, Message: "<go:for> requires a loop expression"}
+		}
+		body, close, err := parseNodes(s, stopEndFor)
 		if err != nil {
 			return nil, err
 		}
 		if close.kind == tagNone {
 			return nil, &SyntaxError{Line: tok.line, Message: "<go:for> missing <go:endfor/>"}
 		}
+		if err := rejectPayload(close); err != nil {
+			return nil, err
+		}
 		return ast.NewFor(tok.payload, body, tok.line), nil
 
 	default:
 		return nil, &SyntaxError{Line: tok.line, Message: fmt.Sprintf("unexpected %s here", tok.kind)}
 	}
+}
+
+// rejectPayload reports the tags that mean something only on their own -
+// the closers <go:endif/>, <go:endfor/> and <go:endswitch/> - when one is
+// written carrying a payload. It would otherwise be dropped on the floor
+// without a word. <go:else/> has its own, more specific message in buildIf.
+func rejectPayload(tok tagToken) error {
+	if tok.payload == "" {
+		return nil
+	}
+	return &SyntaxError{Line: tok.line, Message: fmt.Sprintf("%s does not take a payload", tok.kind)}
 }
 
 // buildIf handles a <go:if> that already had its head read (tok). It reads
@@ -112,9 +153,7 @@ func buildNode(s *scanner, tok tagToken) (ast.Node, error) {
 // slices) when there are no <go:elif/> or <go:else/> tags respectively,
 // matching ast.If's contract.
 func buildIf(s *scanner, tok tagToken) (ast.Node, error) {
-	stop := map[tagKind]bool{tagElif: true, tagElse: true, tagCloseIf: true}
-
-	then, close, err := parseNodes(s, stop)
+	then, close, err := parseNodes(s, stopElifOrEnd)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +166,7 @@ func buildIf(s *scanner, tok tagToken) (ast.Node, error) {
 		if close.payload == "" {
 			return nil, &SyntaxError{Line: close.line, Message: "<go:elif> requires a condition"}
 		}
-		elifBody, after, err := parseNodes(s, stop)
+		elifBody, after, err := parseNodes(s, stopElifOrEnd)
 		if err != nil {
 			return nil, err
 		}
@@ -145,13 +184,25 @@ func buildIf(s *scanner, tok tagToken) (ast.Node, error) {
 			return nil, &SyntaxError{Line: close.line, Message: "<go:else> does not take a condition - chained else-if isn't supported, use nested <go:if> instead"}
 		}
 
-		els, close, err = parseNodes(s, map[tagKind]bool{tagCloseIf: true})
+		// The else body stops on <go:endif/> like any other, but also
+		// on <go:elif/>: a bare elif after the else is a real (and
+		// otherwise silent) mistake - the condition would be dropped,
+		// since the chain above is already closed - so it deserves its
+		// own message instead of "unexpected <go:elif/> here".
+		els, close, err = parseNodes(s, stopElseBody)
 		if err != nil {
 			return nil, err
 		}
-		if close.kind == tagNone {
+		if close.kind == tagElif {
+			return nil, &SyntaxError{Line: close.line, Message: "<go:elif> must come before <go:else/>"}
+		}
+		if close.kind != tagCloseIf {
 			return nil, &SyntaxError{Line: tok.line, Message: "<go:if> missing <go:endif/>"}
 		}
+	}
+
+	if err := rejectPayload(close); err != nil {
+		return nil, err
 	}
 
 	return ast.NewIf(tok.payload, then, elifs, els, tok.line), nil
@@ -160,15 +211,26 @@ func buildIf(s *scanner, tok tagToken) (ast.Node, error) {
 // buildSwitch handles a <go:switch> that already had its head read (tok).
 // Its body is a run of <go:case/>/<go:default/> blocks up to
 // <go:endswitch/>; any text sitting directly between <go:switch> and the
-// first case (e.g. stray whitespace) is discarded rather than kept, since
-// GHP's grammar doesn't give it anywhere to live on the Switch node.
+// first case is rejected rather than dropped, since it has nowhere to
+// live on the Switch node - a reader would see it in the .ghp and never
+// in the page.
 func buildSwitch(s *scanner, tok tagToken) (ast.Node, error) {
 	sw := ast.NewSwitch(tok.payload, nil, nil, tok.line)
-	stop := map[tagKind]bool{tagCase: true, tagDefault: true, tagCloseSwitch: true}
 
-	_, next, err := parseNodes(s, stop)
+	before, next, err := parseNodes(s, stopEndSwitch)
 	if err != nil {
 		return nil, err
+	}
+	// An unterminated switch outranks anything the body may also be
+	// missing, so the report stays on the absent <go:endswitch/>.
+	if next.kind == tagNone {
+		return nil, &SyntaxError{Line: tok.line, Message: "<go:switch> missing <go:endswitch/>"}
+	}
+	if hasContent(before) {
+		// The line points at the <go:switch> rather than at the stray
+		// content: a Text node reports the line it starts on, which
+		// includes the newline left over from the tag above it.
+		return nil, &SyntaxError{Line: tok.line, Message: "<go:switch> body must start with <go:case/> or <go:default/>"}
 	}
 
 	sawDefault := false
@@ -176,7 +238,10 @@ func buildSwitch(s *scanner, tok tagToken) (ast.Node, error) {
 		switch next.kind {
 		case tagCase:
 			caseTok := next
-			body, after, err := parseNodes(s, stop)
+			if caseTok.payload == "" {
+				return nil, &SyntaxError{Line: caseTok.line, Message: "<go:case> requires at least one value"}
+			}
+			body, after, err := parseNodes(s, stopEndSwitch)
 			if err != nil {
 				return nil, err
 			}
@@ -188,7 +253,7 @@ func buildSwitch(s *scanner, tok tagToken) (ast.Node, error) {
 				return nil, &SyntaxError{Line: next.line, Message: "duplicate <go:default>"}
 			}
 			sawDefault = true
-			body, after, err := parseNodes(s, stop)
+			body, after, err := parseNodes(s, stopEndSwitch)
 			if err != nil {
 				return nil, err
 			}
@@ -199,7 +264,24 @@ func buildSwitch(s *scanner, tok tagToken) (ast.Node, error) {
 			return nil, &SyntaxError{Line: tok.line, Message: "<go:switch> missing <go:endswitch/>"}
 		}
 	}
+
+	if err := rejectPayload(next); err != nil {
+		return nil, err
+	}
 	return sw, nil
+}
+
+// hasContent reports whether nodes hold anything a reader of the page
+// would actually see, skipping the whitespace-only Text nodes that are
+// just the layout between two tags.
+func hasContent(nodes []ast.Node) bool {
+	for _, n := range nodes {
+		if text, ok := n.(*ast.Text); ok && strings.TrimSpace(text.Value) == "" {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 // parseImportPaths splits a <go:import (...)/> payload into its individual
@@ -211,20 +293,30 @@ func parseImportPaths(payload string) ([]ast.ImportPath, error) {
 	inner = strings.TrimSuffix(inner, ")")
 
 	var paths []ast.ImportPath
-	for _, line := range strings.FieldsFunc(inner, func(r rune) bool {
+	for _, item := range strings.FieldsFunc(inner, func(r rune) bool {
 		return r == '\n' || r == ','
 	}) {
-		line = strings.TrimSpace(line)
-		if line == "" {
+		item = strings.TrimSpace(item)
+		if item == "" {
 			continue
 		}
 
 		var alias, path string
-		if idx := strings.LastIndexByte(line, ' '); idx != -1 {
-			alias = line[:idx]
-			path = strings.TrimSpace(line[idx+1:])
-		} else {
-			path = line
+		switch fields := strings.Fields(item); len(fields) {
+		case 1:
+			path = fields[0]
+		case 2:
+			alias, path = fields[0], fields[1]
+		default:
+			// An item holding more than "alias path" is two imports
+			// written on one line with nothing between them - reading
+			// them as a single one would silently invent an alias out
+			// of the first path, so it is reported instead.
+			return nil, fmt.Errorf("<go:import> %s is not a single import path (use one path per line, or separate them with commas)", item)
+		}
+
+		if strings.ContainsAny(alias, `"'`) {
+			return nil, fmt.Errorf("<go:import> alias %s cannot be quoted", alias)
 		}
 
 		paths = append(paths, ast.ImportPath{Alias: alias, Path: strings.Trim(path, `"`)})

@@ -5,7 +5,7 @@
 // how they nest inside one another. It knows nothing about Go syntax:
 // whatever text sits inside a tag is carried byte-for-byte, and
 // only becomes a real compile error later, when the generated file is
-// build with `go build`.
+// built with `go build`.
 package parser
 
 import (
@@ -14,14 +14,22 @@ import (
 	"ghp/src/internal/ast"
 )
 
-// Parse reads a .ghp source and returns its tree in source order
+// Parse reads a .ghp source and returns its tree in source order, plus the
+// set of packages the page needs (Program.Imports): the ones GHP generates
+// code for (net/http, and fmt/html/io when the page echoes or prints) and
+// every <go:import (...)/> the page declared, already deduplicated.
 func Parse(source string) (*ast.Program, error) {
 	nodes, _, err := parseNodes(newScanner(source), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ast.Program{Nodes: nodes}, nil
+	imports, err := ast.CollectImports(nodes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ast.Program{Nodes: nodes, Imports: imports}, nil
 }
 
 // SyntaxError reports a problem found while scanning the source, together
