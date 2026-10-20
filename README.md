@@ -5,21 +5,24 @@
 [![Go Version](https://img.shields.io/github/go-mod/go-version/GHP-GoLang-Framework/ghp)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-PHP-style templates, backed by real Go.
+**PHP-style templates, backed by real Go.**
 
-GHP compiles `.ghp` files — HTML with real embedded Go — straight into `net/http` handlers, with no runtime template engine. Everything between the tags is real Go: it compiles with `go build`, errors point to the right line of the `.ghp`, and any package (standard, external, or from your own module) can be imported.
+GHP compiles `.ghp` files into Go HTTP handlers. A page combines HTML with embedded Go code, and the generated handlers are compiled into the application rather than interpreted by a runtime template engine.
 
-## Status
+GHP is under active development. For the supported syntax and current behavior, use [`docs/template.ghp`](docs/template.ghp) as the language reference.
 
-Active development. The syntax below works end to end: `ghp build`/`ghp dev`
-discover the `.ghp` pages, parse them into an AST
-(`src/internal/parser`), emit a Go handler per page
-(`src/internal/transpiler/codegen`) and compile the project into a binary.
-The implementation status of each piece and how tests are organized are in
-[`docs/testing.md`](docs/testing.md); the language reference is
-[`docs/template.ghp`](docs/template.ghp).
+## How it works
 
-## The syntax (target)
+The build pipeline discovers `.ghp` pages, parses each page into an AST, generates Go source code, and builds the resulting application.
+
+- CLI: `src/cmd`
+- Parser and AST: `src/internal`
+- Code generation: `src/internal/transpiler/codegen`
+- Integration and end-to-end tests: `src/test`
+
+The generated Go code uses `net/http` handlers, and GHP adds the imports those handlers need — see [Template tags](#template-tags) for the rules.
+
+## Example
 
 ```html
 <go:import ("fmt")/>
@@ -51,16 +54,18 @@ The implementation status of each piece and how tests are organized are in
 </html>
 ```
 
-Every GHP tag is self-closing (ends with `/>`). Blocks with a body — `<go:if>`, `<go:switch>`, `<go:for>` — are closed by the `<go:endif/>`, `<go:endswitch/>`, and `<go:endfor/>` tags.
+This example illustrates the intended template syntax. Refer to [`docs/template.ghp`](docs/template.ghp) for the canonical grammar and current implementation status.
 
-| Tag | What it does |
+### Template tags
+
+| Tag | Purpose |
 | --- | --- |
-| `<go:import (...)/>` | Imports one or more packages — standard, external, or from your module. |
-| `<go .../>` | Block of Go code (statement) — can open a scope between HTML chunks. |
-| `<go= expression/>` | Renders an expression's value into the HTML, with automatic escaping. |
-| `<go:if/>` / `<go:elif/>` / `<go:else/>` / `<go:endif/>` | Conditional, using Go's native operators. |
-| `<go:switch/>` / `<go:case/>` / `<go:default/>` / `<go:endswitch/>` | Switch. |
-| `<go:for/>` / `<go:endfor/>` | Loop — any form of `for`/`range` valid in Go. |
+| `<go:import (...)/>` | Imports packages available to the page. |
+| `<go .../>` | Executes a Go statement or block of statements. |
+| `<go= expression/>` | Evaluates a Go expression and writes its value to the response. |
+| `<go:if/>`, `<go:elif/>`, `<go:else/>`, `<go:endif/>` | Conditional control flow. |
+| `<go:switch/>`, `<go:case/>`, `<go:default/>`, `<go:endswitch/>` | Switch control flow. |
+| `<go:for/>`, `<go:endfor/>` | Loop control flow. |
 
 `net/http` is always imported, and `fmt`/`html`/`io` are added when the page
 actually echoes or prints — no need to declare them. Importing one of them
@@ -71,53 +76,37 @@ Routing is per file: `pages/index.ghp` becomes `/`, `pages/blog/[slug].ghp` beco
 
 ## Installation
 
-Every green merge to `main` already produces a CalVer release
-(`YYYY.MM.DD[.N]`) with container images, binary archives and packages. Pick
-the channel that fits:
+GHP publishes release artifacts and container images through its release workflow. Check the [GitHub Releases page](https://github.com/GHP-GoLang-Framework/ghp/releases) for the latest available artifacts and installation instructions.
 
-| Channel | What you get |
+| Channel | Details |
 | --- | --- |
-| [Docker image](https://github.com/GHP-GoLang-Framework/ghp/pkgs/container/ghp) | `ghcr.io/ghp-golang-framework/ghp` — `edge` (tip of `main`), CalVer tag + `latest` |
-| [AUR `ghp` / `ghp-bin`](https://aur.archlinux.org/packages/ghp) | Arch Linux (source build or prebuilt archive) |
-| [Debian/Ubuntu `.deb`](https://github.com/GHP-GoLang-Framework/ghp/releases) | For the `ghp-apt` apt repository (not provisioned yet) |
-| [Fedora `.rpm` / COPR](https://github.com/GHP-GoLang-Framework/ghp/releases) | For the COPR repository (not provisioned yet) |
-| [GitHub Release assets](https://github.com/GHP-GoLang-Framework/ghp/releases) | `checksums.txt`, archives, `.deb`/`.rpm` — direct download |
+| [Docker image](https://github.com/GHP-GoLang-Framework/ghp/pkgs/container/ghp) | `ghcr.io/ghp-golang-framework/ghp` |
+| [AUR package](https://aur.archlinux.org/packages/ghp) | Arch Linux package, if available in the current release |
+| [GitHub Releases](https://github.com/GHP-GoLang-Framework/ghp/releases) | Binary archives and checksums, plus platform packages when published |
 
-See [`docs/installation.md`](docs/installation.md) for the full instructions
-for every path. Right now the simplest routes are Docker and the AUR:
-
-```bash
-docker pull ghcr.io/ghp-golang-framework/ghp:latest
-docker run --rm ghcr.io/ghp-golang-framework/ghp:latest version
-
-yay -S ghp           # Arch Linux (or ghp-bin), then `ghp version`
-```
-
-No `go install` yet. Building from source is also documented in
-[`docs/installation.md`](docs/installation.md).
+For the full installation procedure, see [`docs/installation.md`](docs/installation.md).
 
 ## Developing GHP
 
-```bash
+```sh
 git clone https://github.com/GHP-GoLang-Framework/ghp.git
 cd ghp
-make setup  # enables the git hooks (no Node needed)
+make setup
 make lint
 make test
-make build        # builds the ghp binary into bin/
-make coverage     # full run, enforces the 90% minimum
+make build
 ```
 
-All developer commands live in the [`Makefile`](Makefile) (mirroring what CI runs) — `make help` lists them. Coverage minimum is 90%; details in [`docs/testing.md`](docs/testing.md).
+Use `make help` to list all available commands. The testing guide explains test organization, integration and end-to-end tests, and the project's coverage requirement.
 
 ## Documentation
 
-- [`docs/template.ghp`](docs/template.ghp) — full syntax reference.
-- [`docs/installation.md`](docs/installation.md) — how to install/release GHP on every platform.
-- [`docs/testing.md`](docs/testing.md) — how the tests (unit/integration/e2e) are organized and run.
-- [`docs/git-workflow.md`](docs/git-workflow.md) — branch, commit, and Pull Request flow.
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to contribute.
+- [`docs/template.ghp`](docs/template.ghp): GHP syntax reference.
+- [`docs/installation.md`](docs/installation.md): installation and release channels.
+- [`docs/testing.md`](docs/testing.md): test organization and conventions.
+- [`docs/git-workflow.md`](docs/git-workflow.md): branches, commits, and pull requests.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): contribution guide.
 
 ## License
 
-[MIT](LICENSE).
+GHP is licensed under the [MIT License](LICENSE).

@@ -1,74 +1,101 @@
 # Contributing to GHP
 
-Thanks for your interest in contributing. This document covers the essentials to get started — the details of each part are linked below.
+Thanks for your interest in contributing to GHP. This guide covers the usual development workflow; the linked documents provide the details.
 
 ## Before you start
 
-- **Git and PR workflow**: read [`docs/git-workflow.md`](docs/git-workflow.md). Summary: branch off `main`, PR back to `main`, green CI + mandatory approval before merge. No exceptions — not even the maintainer commits directly to `main`.
-- **Tests**: read [`docs/testing.md`](docs/testing.md). A minimum coverage of 90% (unit + integration) is mandatory in CI.
-- **GHP syntax**: [`docs/template.ghp`](docs/template.ghp) is the reference for the language the parser/codegen will implement.
+Read these documents before changing the code:
 
-## Setting up the local environment
+- [Git workflow](docs/git-workflow.md): branches, commits, pull requests, and review.
+- [Testing guide](docs/testing.md): test organization, conventions, and coverage requirements.
+- [GHP template syntax](docs/template.ghp): the authoritative reference for the language syntax.
 
-Prerequisites: Go (version from [`go.mod`](go.mod)). No Node.js needed — the toolchain is Go + POSIX shell.
+## Development environment
 
-```bash
+Install the Go version declared in [`go.mod`](go.mod). The core toolchain uses Go and POSIX shell. Node.js is only needed when working on the VS Code extension.
+
+Clone the repository and enable the Git hooks:
+
+```sh
 git clone https://github.com/GHP-GoLang-Framework/ghp.git
 cd ghp
-make setup   # enables the git hooks
+make setup
 ```
 
-This activates `pre-commit` (gofmt + `go vet` on the staged Go files) and `commit-msg` (validates the commit message via a POSIX shell script built into the hook).
+The hooks help catch common problems: `pre-commit` runs formatting and `go vet` checks on staged Go files, while `commit-msg` validates the commit message.
+
+Run `make help` to see the available developer commands.
 
 ## Making a change
 
-```bash
+Start from an up-to-date `main` branch and create a focused branch:
+
+```sh
 git checkout main
 git pull --ff-only origin main
-git checkout -b feat/name-of-the-change
-
-# ... edit, commit ...
-
-# Everything CI runs, in one place (see the Makefile — make help lists all):
-make lint
-make test         # = make test-short, the fast unit tests
-make test-integration   # what CI will run anyway
-
-git push -u origin feat/name-of-the-change
-gh pr create --base main --title "feat(scope): description in the imperative"
+git checkout -b feat/short-description
 ```
+
+Make the change, add or update tests where appropriate, and run the checks relevant to it. The usual targets are:
+
+```sh
+make lint
+make test
+make test-integration
+```
+
+Check `make help` and the `Makefile` if a target differs in your checkout. Before opening a pull request, push your branch:
+
+```sh
+git push -u origin feat/short-description
+gh pr create --base main
+```
+
+Do not commit directly to `main`.
 
 ## Commit messages
 
-[Conventional Commits](https://www.conventionalcommits.org/en/), validated automatically by the `commit-msg` hook. Format:
+Use [Conventional Commits](https://www.conventionalcommits.org/). The commit-message hook validates the format:
 
+```text
+type(optional-scope): imperative summary
 ```
-type(optional scope): short description in the imperative
-```
 
-Accepted types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`. The PR title follows the same pattern — it is revalidated in CI and becomes the squash commit message on merge.
+Common types include `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, and `revert`.
 
-Recommended scope: the affected domain/package (`parser`, `codegen`, `pages`, `build`, `cli`, `docker`, `docs`...), never the file name.
+Use a scope for the affected domain or package when it adds clarity, for example `parser`, `codegen`, `pages`, `build`, `cli`, or `docs`. Avoid using a filename as the scope unless it genuinely describes the change.
 
-## Code quality
+Keep the subject concise and within the repository's enforced length limit. Explain the motivation in the body when the subject alone is not enough.
 
-- `gofmt` — formatting, fixed automatically by `pre-commit`.
-- `go vet` — runs in `pre-commit` and in CI.
-- `golangci-lint` — currently **disabled**: no release built with Go 1.26+ exists yet (the binary built with an older Go refuses to lint this module). Once one does, re-enable the job in `ci.yml` and run `golangci-lint run ./src/...` locally to get ahead.
-- Tests covering whatever is added — see [`docs/testing.md`](docs/testing.md) for the conventions (table-driven tests, testing against `io.Writer`/explicit input instead of globals).
+## Code quality and tests
 
-## Opening the PR
+- Run `gofmt` on changed Go files.
+- Run `go vet` and the relevant tests before submitting.
+- Add or update regression tests for bug fixes and tests for new behavior.
+- Prefer table-driven tests when they make cases easier to compare.
+- Prefer explicit inputs and returned values or `io.Writer` dependencies over global state and direct writes to `os.Stdout`.
+- Follow the integration and end-to-end test conventions in [`docs/testing.md`](docs/testing.md).
+- The CI pipeline currently requires at least 90% coverage. Check the testing guide for how coverage is measured.
+- The `golangci-lint` job may be disabled depending on the available Go toolchain. Check the current CI configuration rather than assuming it is enabled.
 
-- Base is always `main`.
-- Title in Conventional Commit.
-- The `gate` job (lint, unit/integration/e2e tests, coverage ≥90%, build, vulnerability and secret scanning) must pass.
-- Needs approval from [@castrogusttavo](https://github.com/castrogusttavo) before merge.
-- Merge is by squash — the branch can have as many WIP commits as needed; only the final commit on `main` matters.
+When changing the VS Code extension, run its tests from `editors/vscode` using the commands documented in that directory. Node.js dependencies are not required for ordinary Go-only changes.
 
-## Reporting bugs or suggesting features
+## Opening a pull request
 
-Open a [GitHub issue](https://github.com/GHP-GoLang-Framework/ghp/issues) describing the problem or suggestion. If it is a bug, include a minimal example that reproduces the behavior.
+Before opening a pull request:
 
-## Questions
+1. Ensure the branch is based on the latest relevant `main`.
+2. Run the checks applicable to the change and report any that could not be run.
+3. Update documentation when behavior, syntax, commands, or configuration changes.
+4. Use the repository's pull-request template.
+5. Describe the change, how it was tested, and any compatibility impact.
 
-If anything in this document or its linked pages is outdated or confusing, open an issue or just fix it in a PR — documentation is code like any other part of the project.
+Pull requests target `main`. CI must pass and the required review approval must be obtained before merge. The repository uses squash merges, so keep the pull request history easy to review even if the branch contains work-in-progress commits.
+
+## Reporting bugs and proposing features
+
+Open an [issue on GitHub](https://github.com/GHP-GoLang-Framework/ghp/issues). For bugs, include a minimal reproduction, expected behavior, actual behavior, and relevant environment details. For feature proposals, describe the problem before prescribing a solution.
+
+## Questions and corrections
+
+If this guide or a linked document is unclear or outdated, open an issue or submit a focused documentation change. Documentation is part of the project and should stay accurate.
