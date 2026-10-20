@@ -251,3 +251,61 @@ func TestAssembleUnsupportedNodeFails(t *testing.T) {
 		t.Fatal("Assemble() = nil error, want unsupported node type error")
 	}
 }
+
+// TestAssembleSingleAliasedImport is the edge case the import-block
+// renderer has to get right for a hand-built program: exactly one import,
+// with an alias. Dropping the alias into a one-line import would leave the
+// page body referring to a name the import does not bind.
+func TestAssembleSingleAliasedImport(t *testing.T) {
+	prog := &ast.Program{
+		Nodes:   []ast.Node{ast.NewText("hi", 1)},
+		Imports: map[string]ast.ImportPath{"strings": {Alias: "s", Path: "strings"}},
+	}
+
+	out, err := Assemble("pages", "Index", prog)
+	if err != nil {
+		t.Fatalf("Assemble: %v", err)
+	}
+
+	f := parseAssembled(t, out)
+	var found bool
+	for _, imp := range f.Imports {
+		if imp.Path.Value == `"strings"` {
+			found = true
+			if imp.Name == nil || imp.Name.Name != "s" {
+				t.Errorf("strings import name = %v, want alias \"s\"", imp.Name)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("import \"strings\" missing:\n%s", out)
+	}
+}
+
+// TestAssembleOutputIsStable pins the exact bytes Assemble produces for a
+// small program, so a change to the shared import renderer that alters the
+// output - even a cosmetic one - is caught here rather than silently
+// changing every generated file in the wild.
+func TestAssembleOutputIsStable(t *testing.T) {
+	prog := &ast.Program{Nodes: []ast.Node{ast.NewText("hi", 1)}}
+
+	out, err := Assemble("pages", "Index", prog)
+	if err != nil {
+		t.Fatalf("Assemble: %v", err)
+	}
+
+	want := "package pages\n" +
+		"\n" +
+		"import (\n" +
+		"\t\"io\"\n" +
+		"\t\"net/http\"\n" +
+		")\n" +
+		"\n" +
+		"func Index(w http.ResponseWriter, r *http.Request) {\n" +
+		"\tio.WriteString(w, \"hi\")\n" +
+		"}\n"
+
+	if out != want {
+		t.Errorf("Assemble() =\n%s\nwant:\n%s", out, want)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -19,7 +20,10 @@ func TestDiscover(t *testing.T) {
 	write(t, root, "blog/notes.md")
 	write(t, root, "assets/img.png")
 
-	got := Discover(root)
+	got, err := Discover(root)
+	if err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
 
 	want := []string{
 		"about.ghp",
@@ -45,13 +49,21 @@ func TestDiscover(t *testing.T) {
 	}
 }
 
-// TestDiscoverMissingDir verifies an unreadable root does not panic
-// and simply yields no files.
+// TestDiscoverMissingDir verifies an unreadable root is reported instead of
+// being flattened into "no pages found" - a mistyped project path must fail
+// the build with the path it could not read, not build an empty site.
 func TestDiscoverMissingDir(t *testing.T) {
-	got := Discover(filepath.Join(t.TempDir(), "does-not-exist"))
+	missing := filepath.Join(t.TempDir(), "does-not-exist")
 
-	if len(got) != 0 {
-		t.Fatalf("got %d files from a missing dir, want 0", len(got))
+	got, err := Discover(missing)
+	if err == nil {
+		t.Fatalf("Discover(%q) = nil error, want error for missing root", missing)
+	}
+	if got != nil {
+		t.Errorf("pages = %+v, want nil on error", got)
+	}
+	if !strings.Contains(err.Error(), missing) {
+		t.Errorf("error = %q, want it to name %q", err, missing)
 	}
 }
 
@@ -61,7 +73,10 @@ func TestDiscoverRelativeKeys(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "blog/about.ghp")
 
-	got := Discover(root)
+	got, err := Discover(root)
+	if err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
 	if len(got) != 1 {
 		t.Fatalf("got %d files, want 1", len(got))
 	}

@@ -22,13 +22,7 @@ type Page struct {
 // "/srv/src", RelDir "blog", FileName "about" -> "/srv/src/blog/about.go";
 // FileName "[slug]" -> "/srv/src/blog/slug.go".
 func (p *Page) Go(root string) string {
-	return filepath.Join(root, p.RelDir, goName(p.FileName)+".go")
-}
-
-// goName strips characters that are not letters or digits so the result is a
-// valid Go file base name. Ex: "[slug]" -> "slug".
-func goName(fileName string) string {
-	return textutil.StripNonWord(fileName)
+	return filepath.Join(root, p.RelDir, textutil.StripNonWord(p.FileName)+".go")
 }
 
 // Ghp returns the path to the source .ghp page, rooted at root. Ex: root "/srv/src", RelDir "blog", FileName "about" -> "/srv/src/blog/about.ghp".

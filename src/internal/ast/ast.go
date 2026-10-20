@@ -5,6 +5,10 @@
 // at the .ghp file the developer actually wrote.
 package ast
 
+import (
+	"ghp/src/internal/goimports"
+)
+
 // Node is implemented by every element of a parsed .ghp file
 type Node interface {
 	// Line reports the 1-based source line where this node begins.
@@ -30,11 +34,10 @@ type Import struct {
 }
 
 // ImportPath is a single package path inside a <go:import (...)/> tag,
-// with an optional alias (e.g. `f "fmt"`).
-type ImportPath struct {
-	Alias string
-	Path  string
-}
+// with an optional alias (e.g. `f "fmt"`). It is an alias for
+// goimports.Import so the type that carries a declared import and the
+// renderer that writes the import block stay the same one.
+type ImportPath = goimports.Import
 
 // Statement is a raw Go statement block from a <go ...> tag.
 type Statement struct {

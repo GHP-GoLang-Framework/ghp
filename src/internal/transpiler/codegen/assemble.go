@@ -3,10 +3,10 @@ package codegen
 import (
 	"fmt"
 	"go/format"
-	"sort"
 	"strings"
 
 	"ghp/src/internal/ast"
+	"ghp/src/internal/goimports"
 )
 
 // Assemble builds a complete, compilable .go source file for one page:
@@ -34,7 +34,7 @@ func Assemble(pkg, funcName string, prog *ast.Program) (string, error) {
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "package %s\n\n", pkg)
-	writeImports(&b, imports)
+	b.WriteString(goimports.Block(specsOf(imports)))
 	fmt.Fprintf(&b, "func %s(w http.ResponseWriter, r *http.Request) {\n", funcName)
 	b.WriteString(body)
 	b.WriteString("}\n")
@@ -58,24 +58,14 @@ func importsOf(prog *ast.Program) (map[string]ast.ImportPath, error) {
 	return ast.CollectImports(prog.Nodes)
 }
 
-// writeImports writes the import(...) block, one entry per path in
-// imports, with the alias when the page declared one. The keys are walked
-// in sorted order so the same tree always yields the same intermediate
-// source; go/format sorts the block again anyway before Assemble returns.
-func writeImports(b *strings.Builder, imports map[string]ast.ImportPath) {
-	paths := make([]string, 0, len(imports))
-	for path := range imports {
-		paths = append(paths, path)
+// specsOf flattens the path-keyed import set into the list goimports
+// renders. The path is the key, so it wins over the (possibly empty) Path
+// field of each entry.
+func specsOf(imports map[string]ast.ImportPath) []goimports.Import {
+	specs := make([]goimports.Import, 0, len(imports))
+	for path, imp := range imports {
+		imp.Path = path
+		specs = append(specs, imp)
 	}
-	sort.Strings(paths)
-
-	b.WriteString("import (\n")
-	for _, path := range paths {
-		if alias := imports[path].Alias; alias != "" {
-			fmt.Fprintf(b, "\t%s %q\n", alias, path)
-		} else {
-			fmt.Fprintf(b, "\t%q\n", path)
-		}
-	}
-	b.WriteString(")\n\n")
+	return specs
 }
