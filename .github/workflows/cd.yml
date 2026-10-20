@@ -1,7 +1,7 @@
 name: CD
 
 # Publishes an "edge" image on every push to main that passes CI, and creates
-# a CalVer release (YYYY.MM.DD[.N]) automatically right after — same pattern
+# a CalVer release (YYYY.MM.DD[+N]) automatically right after — same pattern
 # as Nexo: the tag marks when that build became available, created after the
 # publish, not before. release.yml only covers the case of someone tagging a
 # CalVer manually (the automatic path uses GITHUB_TOKEN, which does not
@@ -93,11 +93,18 @@ jobs:
       - name: Compute CalVer tag
         id: tag
         run: |
-          # CalVer YYYY.MM.DD[.N] (UTC). First release of the day without a
-          # suffix; later releases on the same day get .1, .2, ...
+          # CalVer YYYY.MM.DD[+N] (UTC). The first release of the day is the
+          # bare date; later releases on the same day append a counter as
+          # semver build metadata. It used to be ".N", but goreleaser parses
+          # the tag as semver and rejects four-segment versions outright
+          # ("failed to parse tag '2026.10.20.1' as semver"), so the second
+          # release of any day broke halfway through the pipeline. "+N" is
+          # valid semver, so every release of the day goes through.
           TODAY=$(date -u +%Y.%m.%d)
-          EXISTING=$(git tag --list "$TODAY" "$TODAY.*" | wc -l)
-          if [ "$EXISTING" -eq 0 ]; then TAG="$TODAY"; else TAG="$TODAY.$EXISTING"; fi
+          # Match the "+N" suffix; a bare date plus its suffixed forms are one
+          # series, and counting only the bare tag would hand out "+1" twice.
+          EXISTING=$(git tag --list "$TODAY" "$TODAY+*" | wc -l)
+          if [ "$EXISTING" -eq 0 ]; then TAG="$TODAY"; else TAG="$TODAY+$EXISTING"; fi
           echo "Releasing $TAG (existing today: $EXISTING)"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
