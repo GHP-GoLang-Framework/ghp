@@ -33,14 +33,28 @@ Before making a change, read `CONTRIBUTING.md`, `docs/git-workflow.md`, and `doc
 ## Implementation guidelines
 
 - Prefer simple, readable designs over speculative abstractions.
-- Avoid duplicated logic. Reuse existing helpers and package boundaries when they fit.
-- Follow the existing package layout and naming conventions.
 - Prefer the standard library. Discuss new dependencies before adding them.
 - Format Go code with `gofmt` and keep it clean under `go vet`.
 - Write concise comments that explain why a decision exists, not what each line does. Exported Go identifiers need useful English GoDoc comments.
 - Return errors instead of silently swallowing them. Do not panic for expected error conditions.
 - Never log, expose, or commit credentials, tokens, or other secrets.
 - Do not introduce unrelated formatting or refactoring into a focused change.
+
+## Code organization and modularity
+
+- The internal packages form a strict one-way dependency graph. A package may only import packages below it in this list, never above it and never a sibling in a way that would close a cycle:
+  - Leaves with no internal imports: `ast`, `colors`, `textutil`.
+  - `parser` and `codegen` import `ast`; `pages` imports `textutil`.
+  - `transpiler` imports `parser`, `codegen`, `pages`, and `colors`.
+  - `build` imports `transpiler`, `pages`, and `colors`.
+  - `cmd` imports `build`.
+- Do not add an import that points upward or creates a cycle. When two packages at the same level need the same logic, move it down into a shared lower package instead of duplicating it or reaching sideways into a sibling.
+- Keep one responsibility per package and keep it there. The parser turns a template into `ast` nodes and must not know how code is emitted; codegen reads `ast` nodes and must not re-parse text. The only channel between them is `ast`.
+- Follow the existing package layout and naming conventions. Before writing a new helper, look for an existing one: `textutil` owns naming and normalization, and `colors` owns terminal output.
+- `ast.Walk` is the traversal for observing every node with a plain callback, as `ast.CollectImports` does; reuse it instead of recursing over `Then`/`Else`/`Body` by hand. The codegen's `generateNodes` is a deliberate second traversal: it writes to a builder and returns an error per node, which `Walk`'s `func(Node)` callback cannot express. Add a third traversal only for a concrete reason, such as needing an effect or an error per node.
+- When the same logic appears in a second place, extract it into the lowest package both callers can import and cover it with a test there. Prefer adding a parameter or a variant to an existing helper over copying a block and changing one detail.
+- Wrap errors with `%w` and name the operation and the subject, as in `parse %s: %w`. Do not restate the underlying error's message.
+- Keep package-level `var` declarations to immutable tables and interface assertions. Pass mutable state as a parameter so callers can see and test it.
 
 ## Tests and verification
 
