@@ -93,6 +93,11 @@ jobs:
 
       - name: Capture release URL
         id: release
+        # `gh` needs a token of its own: the GITHUB_TOKEN exported for the
+        # goreleaser step above does not carry over, so the CLI exited with
+        # "authentication required" (code 4) once the release existed.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           URL=$(gh release view "${{ inputs.tag }}" --json url -q .url)
           echo "url=$URL" >> "$GITHUB_OUTPUT"
