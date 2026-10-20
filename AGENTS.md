@@ -45,8 +45,8 @@ Before making a change, read `CONTRIBUTING.md`, `docs/git-workflow.md`, and `doc
 
 ## Tests and verification
 
-- Do not create, modify, or delete tests unless explicitly asked. The exception is a change that breaks existing tests or that would drop CI coverage below 90%: stop and report it before adjusting the tests.
-- When tests are requested, follow `docs/testing.md` for test conventions. Prefer table-driven tests where they improve clarity, explicit inputs, and `io.Writer` or returned values over global state and direct writes to `os.Stdout`.
+- Add or update tests when behavior changes or when a bug fix needs regression coverage. Do not remove useful coverage merely to make a change pass.
+- Follow `docs/testing.md` for test conventions. Prefer table-driven tests where they improve clarity, explicit inputs, and `io.Writer` or returned values over global state and direct writes to `os.Stdout`.
 - Keep integration and end-to-end tests aligned with the existing `testing.Short()` conventions.
 - Preserve the repository's required coverage threshold of 90%, unless the maintainer explicitly changes that policy.
 - Before submitting a change, run the relevant checks. The usual full verification is:
