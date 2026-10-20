@@ -226,6 +226,63 @@ jobs:
       - name: Validate .goreleaser.yml
         run: goreleaser check
 
+  # A job that calls a reusable workflow may only keep or reduce the
+  # caller's permissions, never raise them. GitHub enforces this when the
+  # run starts and reports a startup_failure, so neither the YAML parse nor
+  # actionlint catches a mismatch beforehand: cd.yml and release.yml called
+  # release-artifacts.yml with contents: read while it declares
+  # contents: write, and every CD run since was rejected before its first
+  # job. This checks the rule on every event, and does not depend on Go.
+  workflow-permissions:
+    name: Reusable Workflow Permissions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install PyYAML
+        run: pip install --quiet --disable-pip-version-check 'pyyaml==6.0.2'
+
+      - name: Check caller permissions against each reusable workflow
+        run: |
+          python3 - <<'PY'
+          import glob, sys, yaml
+
+          RANK = {"write": 2, "read": 1, "none": 0}
+
+          def load(path):
+              with open(path) as fh:
+                  return yaml.safe_load(fh) or {}
+
+          def rank(value):
+              return RANK.get(value or "none", 0)
+
+          failed = False
+          for caller_path in sorted(glob.glob(".github/workflows/*.yml")):
+              caller = load(caller_path)
+              caller_perms = caller.get("permissions") or {}
+              for name, job in (caller.get("jobs") or {}).items():
+                  uses = (job or {}).get("uses") or ""
+                  if not uses.startswith("./"):
+                      continue
+                  callee_path = ".github/workflows/" + uses.rsplit("/", 1)[-1]
+                  callee = load(callee_path)
+                  # A job's own permissions replace the workflow-level ones.
+                  effective = job.get("permissions") or caller_perms
+                  for perm, want in (callee.get("permissions") or {}).items():
+                      got = effective.get(perm)
+                      if rank(got) < rank(want):
+                          print(
+                              f"::error file={caller_path}::job '{name}' calls "
+                              f"{callee_path}, which requires {perm}: {want}, "
+                              f"but the caller grants {got or 'none'}. GitHub "
+                              f"rejects the run with a startup_failure."
+                          )
+                          failed = True
+              print(f"checked {caller_path}")
+          sys.exit(1 if failed else 0)
+          PY
+
   govulncheck:
     name: Vulnerability Scan (govulncheck)
     needs: changes
@@ -288,6 +345,9 @@ jobs:
       - goreleaser-check
       - govulncheck
       - gitleaks
+      # Validates a rule GitHub only checks at run time, so it must block
+      # the merge; a mismatch is invisible until CD refuses to start.
+      - workflow-permissions
       # A non-conventional title used to leave the gate green: the check
       # was reported but nothing depended on it. Listing it here makes a
       # rejected title fail the gate on pull requests. On a push it is
