@@ -1,6 +1,6 @@
 name: Release
 
-# Covers CalVer tags (YYYY.MM.DD[.N]) pushed manually by a human —
+# Covers CalVer tags (YYYY.MM.DD[+N]) pushed manually by a human —
 # e.g.: re-tagging an old commit, a one-off hotfix outside the normal flow.
 # Tags created by cd.yml use GITHUB_TOKEN, which does not trigger other
 # workflows, so cd.yml already creates a versioned image + release there; this
@@ -12,6 +12,9 @@ name: Release
 on:
   push:
     tags:
+      # The trailing * intentionally accepts any suffix (the "+N" counter),
+      # and "+" is a glob metacharacter in filter patterns, so it is not
+      # spelled out literally here.
       - '20[0-9][0-9].[0-9][0-9].[0-9][0-9]*'
 
 permissions:
