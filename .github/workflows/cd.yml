@@ -20,8 +20,41 @@ permissions:
   packages: write
 
 jobs:
+  # The `workflow_run` event carries only the run's conclusion, never the
+  # per-job results, so 'success' alone cannot distinguish "the suite ran
+  # and passed" from "the suite was skipped by the changes filter" - both
+  # report success at the run level. Today the filter forces the suite on
+  # for every push to main, so this cannot fire; it is here so that a
+  # future change to the filter fails the release loudly instead of
+  # quietly cutting a CalVer tag from untested code.
+  verify-tests-ran:
+    name: Verify the test suite ran
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - name: Fail if the CI run skipped the Go suite
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          skipped=$(gh api --paginate \
+            "repos/${{ github.repository }}/actions/runs/${RUN_ID}/jobs" \
+            --jq '.jobs[] | select(.conclusion == "skipped") | .name' \
+            | grep -E '^(Unit Tests|Integration Tests|E2E Tests|Coverage \(min 90%\))$' \
+            || true)
+
+          if [ -n "$skipped" ]; then
+            echo "::error::refusing to publish: the CI run skipped $skipped."
+            echo "The changes filter in ci.yml must keep running the suite on push to main."
+            exit 1
+          fi
+
+          echo "The Go suite ran on this commit."
+
   publish-edge-image:
     name: Publish Edge Image
+    needs: [verify-tests-ran]
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     uses: ./.github/workflows/docker-image.yml
     with:
