@@ -1,65 +1,68 @@
 # AGENTS.md — GHP
 
-Working guidelines for AI agents editing this repository. These rules are mandatory unless the user explicitly overrides them in the conversation.
+Guidelines for AI agents working in this repository. Follow these rules unless the user explicitly overrides them.
 
-## Repo overview
+## Project overview
 
-- Go monorepo: commands in `src/cmd` (`ghp`), core under `src/internal` (`ast`, `parser`, `textutil`, `pages`, `build`, `transpiler/codegen`), integration/e2e under `src/test`.
-- Source of truth for the GHP language: `docs/template.ghp`.
-- Git hooks live in `.github/hooks/` and the toolchain has no Node: `commit-msg` is a self-contained POSIX shell validator, `pre-commit` runs gofmt + `go vet`. Developer commands are centralized in the root `Makefile` (`make help` lists them).
-- VS Code extension lives under `editors/vscode` (TextMate grammar, snippets, grammar tests).
-- Read `CONTRIBUTING.md`, `docs/git-workflow.md` and `docs/testing.md` before your first change.
+- GHP is a Go monorepo. The CLI lives in `src/cmd`; core packages live under `src/internal`, including the AST, parser, page discovery, build pipeline, and code generation.
+- Integration and end-to-end tests live under `src/test`.
+- `docs/template.ghp` is the source of truth for GHP template syntax.
+- The VS Code extension lives in `editors/vscode` and contains the TextMate grammar, snippets, and grammar tests.
+- Git hooks live in `.github/hooks`. The hooks use POSIX shell; the repository's main toolchain is Go.
+- Developer commands are defined in the root `Makefile`. Run `make help` to see the available targets.
 
-## 1. Language: English only
+Before making a change, read `CONTRIBUTING.md`, `docs/git-workflow.md`, and `docs/testing.md`.
 
-- All new source code, comments, documentation, commit messages, PR titles/bodies and issue references must be in English.
-- Do NOT write new PT-BR content anywhere.
-- Existing PT-BR content is known debt: migrate it only in dedicated `docs:`/`refactor:` PRs, never inside feature PRs.
+## Language and documentation
 
-## 2. Granular commits, one branch per PR
+- Write new source code comments, GoDoc, documentation, commit messages, pull-request titles, and pull-request descriptions in English.
+- Do not write new PT-BR content anywhere. Existing PT-BR content is known debt: migrate it only in dedicated `docs:` or `refactor:` pull requests, never inside feature changes.
+- Keep documentation consistent with the actual implementation. `docs/template.ghp` defines the language syntax.
+- When behavior or syntax changes, update the relevant documentation, including `README.md`, `docs/`, or `editors/` as appropriate.
+- Avoid broad documentation migrations in feature changes. Keep unrelated cleanup separate.
 
-- Never commit to `main`. Every change is a new branch (`<type>/<short-description>`) pushed as a PR against `main`.
-- Split work into small logical commits: each commit is one self-contained unit that builds and passes tests.
-- Commit messages follow Conventional Commits (enforced by the `commit-msg` git hook): imperative subject ≤ 100 chars, body explains the *why*, reference the Linear/GHP issue (`Refs: GHP-…`).
-- Never force-push or rewrite pushed history; the repo merges by squash anyway.
+## Git workflow
 
-## 3. Pull Requests
+- Do not commit directly to `main`. Create a branch for each pull request, using a descriptive prefix such as `feat/`, `fix/`, `docs/`, or `refactor/`.
+- Keep commits focused and self-contained. Prefer small changes that are easy to review and revert.
+- Use Conventional Commits. Write an imperative subject of at most 100 characters; explain the reason in the body when it is not obvious.
+- Reference an existing project issue when applicable, for example `Refs: GHP-123`. Do not invent issue IDs.
+- Do not force-push or rewrite published history unless the maintainer explicitly requests it.
+- Open pull requests against `main` and use `.github/PULL_REQUEST_TEMPLATE.md`.
+- Keep pull requests focused. Call out breaking changes and their impact.
 
-- Open a PR against `main` for every branch, filling `.github/PULL_REQUEST_TEMPLATE.md` (Resumo, Issue relacionada, Como testar, Checklist, Impacto) — in English.
-- Every PR should preferably link the related GHP issue from Linear in the `Issue relacionada` section and reference it in commits (`Refs: GHP-…`). Linking is conditional on the issue already existing: creating and organizing issues is up to the project developers.
-- Keep PRs small and focused. No unrelated refactors, renames or reformatting of untouched code (avoids diff noise).
-- Flag breaking changes explicitly (Impacto section) and link the related issue.
-- Never push directly to `main` and never bypass the CI gate.
+## Implementation guidelines
 
-## 4. Tests
+- Prefer simple, readable designs over speculative abstractions.
+- Avoid duplicated logic. Reuse existing helpers and package boundaries when they fit.
+- Follow the existing package layout and naming conventions.
+- Prefer the standard library. Discuss new dependencies before adding them.
+- Format Go code with `gofmt` and keep it clean under `go vet`.
+- Write concise comments that explain why a decision exists, not what each line does. Exported Go identifiers need useful English GoDoc comments.
+- Return errors instead of silently swallowing them. Do not panic for expected error conditions.
+- Never log, expose, or commit credentials, tokens, or other secrets.
+- Do not introduce unrelated formatting or refactoring into a focused change.
 
-- Do NOT create, modify or delete tests unless the user explicitly asks.
-- Exception: if a change breaks existing tests or would drop CI coverage below 90%, stop and report to the user before adjusting tests.
-- When tests ARE requested, follow `docs/testing.md` conventions: table-driven, explicit inputs (no `os.Stdout`/globals), integration/e2e guarded by `testing.Short()`.
+## Tests and verification
 
-## 5. Code style
+- Do not create, modify, or delete tests unless explicitly asked. The exception is a change that breaks existing tests or that would drop CI coverage below 90%: stop and report it before adjusting the tests.
+- When tests are requested, follow `docs/testing.md` for test conventions. Prefer table-driven tests where they improve clarity, explicit inputs, and `io.Writer` or returned values over global state and direct writes to `os.Stdout`.
+- Keep integration and end-to-end tests aligned with the existing `testing.Short()` conventions.
+- Preserve the repository's required coverage threshold of 90%, unless the maintainer explicitly changes that policy.
+- Before submitting a change, run the relevant checks. The usual full verification is:
 
-- Code is gofmt-formatted and `go vet`-clean; the pre-commit hook runs both on staged files.
-- Concise comments with a short example below. Comment the *why*, not the *what*; prefer one line plus an example over a paragraph:
-  ```go
-  // DedupePaths keeps the first occurrence of each import path.
-  // Ex: {"a", "b", "a"} -> {"a", "b"}
+  ```sh
+  gofmt -l ./src
+  go vet ./src/...
+  go test ./src/...
   ```
-- No comments that merely restate the code. Exported identifiers get a short English GoDoc line.
-- Prefer the standard library; ask before adding new dependencies. Follow the existing package layout and naming.
-- Return errors, never swallow them; no panics for expected conditions. Never log or commit secrets.
 
-## 6. Documentation
+- Use the Makefile targets when available, since they mirror CI. Run `npm test` from `editors/vscode` when changing the VS Code extension and its tests.
+- If a check cannot be run, state that clearly and explain why. Do not claim that unrun checks passed.
 
-- Update `README.md`, `docs/` or `editors/` whenever behavior or the language syntax changes (`docs/template.ghp` is the reference).
-- If you change a convention, update the doc that describes it (`docs/git-workflow.md`, `docs/testing.md`, `.github/` templates).
+## Repository hygiene
 
-## 7. Verify before opening the PR
-
-- `gofmt -l ./src` (no output), `go vet ./src/...`, `go test ./src/...` (use `-short` for unit-only), and `npm test` under `editors/vscode` when the extension changed.
-- Coverage must stay ≥ 90%.
-
-## 8. Housekeeping
-
-- Don't modify git config, hooks or CI secrets. There is no Node toolchain at the repo root; the only `npm install` that matters is under `editors/vscode`, and only run it when those dependencies change.
-- Leave the working tree clean: no stray artifacts, no `coverage.out` committed.
+- Do not modify Git configuration, hooks, CI secrets, or release settings unless the task requires it.
+- Do not commit generated binaries, coverage output, temporary files, or unrelated artifacts.
+- Do not install dependencies unless needed for the change.
+- Leave the working tree in a clear, reviewable state.
