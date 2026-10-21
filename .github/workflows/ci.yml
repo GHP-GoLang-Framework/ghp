@@ -183,14 +183,6 @@ jobs:
             exit 1
           }
 
-      - name: Upload coverage to Codecov
-        if: always()
-        uses: codecov/codecov-action@v7
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.out
-          fail_ci_if_error: false
-
   build:
     name: Build
     needs: changes
