@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  GO_VERSION: '1.26'
-  COVERAGE_MIN: '90'
+  GO_VERSION: ${{ vars.GO_VERSION }}
+  COVERAGE_MIN: ${{ vars.COVERAGE_MIN }}
 
 jobs:
   # Decides whether the suite is worth running. A PR that only touches
