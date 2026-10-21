@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"ghp/src/internal/build"
+	"ghp/src/internal/fsutil"
 )
 
 // version is the build version, injected at release time via
@@ -231,11 +232,11 @@ func findMainDir(src string) string {
 		return src
 	}
 	var found string
-	filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
-		if err != nil || found != "" || d.IsDir() {
-			return nil
-		}
-		if d.Name() == "main.go" && isMainFile(path) {
+	fsutil.WalkFiles(src, func(rel string, d fs.DirEntry) bool {
+		return d.Name() != "main.go"
+	}, func(rel string, d fs.DirEntry) error {
+		path := filepath.Join(src, rel)
+		if isMainFile(path) {
 			found = filepath.Dir(path)
 		}
 		return nil
@@ -246,7 +247,7 @@ func findMainDir(src string) string {
 // isMainFile reports whether path is a Go file declaring the main package.
 // Ex: "/srv/pages/src/main.go" with "package main" -> true.
 func isMainFile(path string) bool {
-	data, err := os.ReadFile(path)
+	data, err := fsutil.ReadFile(path)
 	if err != nil {
 		return false
 	}

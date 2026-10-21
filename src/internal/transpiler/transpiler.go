@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 
 	"golang.org/x/term"
 
 	"ghp/src/internal/colors"
+	"ghp/src/internal/fsutil"
 	"ghp/src/internal/pages"
 	"ghp/src/internal/parser"
 	"ghp/src/internal/transpiler/codegen"
@@ -62,28 +62,25 @@ func statusCol(w int) int {
 }
 
 func transpile(page *pages.Page, src string, out string) error {
-	content, err := os.ReadFile(page.Ghp(src))
+	ghpPath := page.Ghp(src)
+	content, err := fsutil.ReadFile(ghpPath)
 	if err != nil {
-		return fmt.Errorf("read %s: %w", page.Ghp(src), err)
+		return err
 	}
 
 	program, err := parser.Parse(string(content))
 	if err != nil {
-		return fmt.Errorf("parse %s: %w", page.Ghp(src), err)
+		return fmt.Errorf("parse %s: %w", ghpPath, err)
 	}
 
 	goSrc, err := codegen.Assemble(page.PkgName, page.FuncName, program)
 	if err != nil {
-		return fmt.Errorf("codegen %s: %w", page.Ghp(src), err)
+		return fmt.Errorf("codegen %s: %w", ghpPath, err)
 	}
 
 	goPath := page.Go(out)
-	if err := os.MkdirAll(filepath.Dir(goPath), 0o755); err != nil {
-		return fmt.Errorf("mkdir %s: %w", filepath.Dir(goPath), err)
-	}
-
-	if err := os.WriteFile(goPath, []byte(goSrc), 0o644); err != nil {
-		return fmt.Errorf("write %s: %w", goPath, err)
+	if err := fsutil.WriteFile(goPath, []byte(goSrc), 0o644); err != nil {
+		return err
 	}
 	return nil
 }

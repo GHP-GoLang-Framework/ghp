@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"ghp/src/internal/colors"
+	"ghp/src/internal/fsutil"
 	"ghp/src/internal/pages"
 	"ghp/src/internal/transpiler"
 )
@@ -137,35 +138,12 @@ func Stage(src string) (string, error) {
 		return "", err
 	}
 
-	err = filepath.WalkDir(src, func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-
+	// Copy only the files we care about: .ghp, .go, go.mod, go.sum
+	skip := func(rel string, d fs.DirEntry) bool {
 		name := d.Name()
-		if filepath.Ext(name) != ".ghp" && filepath.Ext(name) != ".go" && name != "go.mod" && name != "go.sum" {
-			return nil
-		}
-
-		rel, err := filepath.Rel(src, p)
-		if err != nil {
-			return err
-		}
-		data, err := os.ReadFile(p)
-		if err != nil {
-			return err
-		}
-
-		out := filepath.Join(tmpDir, rel)
-		if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
-			return err
-		}
-		return os.WriteFile(out, data, 0o644)
-	})
-	if err != nil {
+		return filepath.Ext(name) != ".ghp" && filepath.Ext(name) != ".go" && name != "go.mod" && name != "go.sum"
+	}
+	if err := fsutil.CopyTree(src, tmpDir, skip); err != nil {
 		os.RemoveAll(tmpDir)
 		return "", err
 	}
@@ -196,7 +174,7 @@ func compile(tmpDir, output string) error {
 func writeRoutes(files []*pages.Page, module string, tmpRoutes string, routesPath string) error {
 	content := pages.GenRoutes(files, module)
 	for _, f := range []string{tmpRoutes, routesPath} {
-		if err := os.WriteFile(f, []byte(content), 0o644); err != nil {
+		if err := fsutil.WriteFile(f, []byte(content), 0o644); err != nil {
 			return err
 		}
 	}
@@ -206,7 +184,7 @@ func writeRoutes(files []*pages.Page, module string, tmpRoutes string, routesPat
 // readModule returns the module directive of a go.mod file, or "" when none
 // is declared. Ex: "module example.com/site\n" -> "example.com/site".
 func readModule(gomod string) string {
-	data, err := os.ReadFile(gomod)
+	data, err := fsutil.ReadFile(gomod)
 	if err != nil {
 		return ""
 	}

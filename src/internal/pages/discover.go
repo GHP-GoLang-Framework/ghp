@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
-	"strings"
+
+	"ghp/src/internal/fsutil"
 )
 
 // Discover recursively walks absPath and returns a Page for every .ghp
@@ -14,19 +15,9 @@ import (
 func Discover(absPath string) ([]*Page, error) {
 	var discovered []*Page
 
-	err := filepath.WalkDir(absPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() || !strings.HasSuffix(d.Name(), ".ghp") {
-			return nil
-		}
-
-		rel, err := filepath.Rel(absPath, path)
-		if err != nil {
-			return err
-		}
-
+	err := fsutil.WalkFiles(absPath, func(rel string, d fs.DirEntry) bool {
+		return filepath.Ext(rel) != ".ghp"
+	}, func(rel string, d fs.DirEntry) error {
 		discovered = append(discovered, NewPage(filepath.ToSlash(rel)))
 		return nil
 	})
