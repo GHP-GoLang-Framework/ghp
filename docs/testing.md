@@ -55,7 +55,7 @@ The e2e tests call the compiled `ghp` binary (via `GHP_BINARY`), not the source 
 - Local command (also wrapped as `make coverage`, which enforces the minimum):
   `go test ./src/... -coverprofile=coverage.out -covermode=atomic -coverpkg=./src/...`
   then check with `go tool cover -func=coverage.out | tail -1` — the same calculation the `coverage` job in `ci.yml` does.
-- The report also goes up to Codecov (`codecov.yml` defines the same 90% as target for `project` and `patch`).
+
 
 ```bash
 go tool cover -func=coverage.out   # see coverage per function
