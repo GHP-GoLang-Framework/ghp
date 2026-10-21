@@ -53,7 +53,7 @@ jobs:
             esac
           done < <(gh api --paginate \
             "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
-            --jq -j '.[].filename + "\u0000"')
+            --jq '.[].filename + "\u0000"')
 
           echo "go=false" >> "$GITHUB_OUTPUT"
 
