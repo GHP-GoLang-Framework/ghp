@@ -9,7 +9,7 @@ import (
 
 func TestGenFor(t *testing.T) {
 	var b strings.Builder
-	err := genFor(&b, ast.NewFor("i := 0; i < n; i++", nil, 1))
+	err := genFor(&b, "", ast.NewFor("i := 0; i < n; i++", nil, 1))
 	if err != nil {
 		t.Fatalf("genFor(): %v", err)
 	}
@@ -23,7 +23,7 @@ func TestGenFor(t *testing.T) {
 func TestGenForWithBody(t *testing.T) {
 	var b strings.Builder
 	body := []ast.Node{ast.NewText("hi", 2)}
-	err := genFor(&b, ast.NewFor("_, item := range items", body, 1))
+	err := genFor(&b, "", ast.NewFor("_, item := range items", body, 1))
 	if err != nil {
 		t.Fatalf("genFor(): %v", err)
 	}
@@ -38,7 +38,7 @@ func TestGenForWithBody(t *testing.T) {
 
 func TestGenForBodyError(t *testing.T) {
 	var b strings.Builder
-	err := genFor(&b, ast.NewFor("i := 0; i < 1; i++", []ast.Node{nil}, 1))
+	err := genFor(&b, "", ast.NewFor("i := 0; i < 1; i++", []ast.Node{nil}, 1))
 	if err == nil {
 		t.Fatal("genFor() = nil error, want error from generateNodes")
 	}

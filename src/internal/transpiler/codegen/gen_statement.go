@@ -14,6 +14,7 @@ import (
 //
 //	b – destination buffer
 //	n – Statement node whose Code is emitted verbatim
-func genStatement(b *strings.Builder, n *ast.Statement) {
+func genStatement(b *strings.Builder, file string, n *ast.Statement) {
+	writeLine(b, file, n.Line())
 	fmt.Fprintf(b, "%s\n", n.Code)
 }

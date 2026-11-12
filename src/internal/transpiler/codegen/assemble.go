@@ -22,7 +22,15 @@ import (
 // catches syntax problems, not semantic ones (an undefined identifier
 // still parses fine).
 func Assemble(pkg, funcName string, prog *ast.Program) (string, error) {
-	body, err := Generate(prog.Nodes)
+	return AssembleFile(pkg, funcName, "", prog)
+}
+
+// AssembleFile is Assemble with `//line` directives: every generated
+// statement is preceded by a directive naming file (the .ghp path) and the
+// template line it came from. go/format keeps directives at column 1, which
+// is where Go requires them. An empty file produces the plain output.
+func AssembleFile(pkg, funcName, file string, prog *ast.Program) (string, error) {
+	body, err := GenerateFile(prog.Nodes, file)
 	if err != nil {
 		return "", err
 	}
