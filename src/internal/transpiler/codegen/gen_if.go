@@ -26,23 +26,25 @@ import (
 //
 //	b – destination buffer
 //	n – If node; Cond is the condition, Then/Elifs/Else are branch bodies
-func genIf(b *strings.Builder, n *ast.If) error {
+func genIf(b *strings.Builder, file string, n *ast.If) error {
+	writeLine(b, file, n.Line())
 	fmt.Fprintf(b, "if %s {\n", n.Cond)
 
-	if err := generateNodes(b, n.Then); err != nil {
+	if err := generateNodes(b, file, n.Then); err != nil {
 		return err
 	}
 
 	for _, elif := range n.Elifs {
+		writeLine(b, file, elif.Line)
 		fmt.Fprintf(b, "} else if %s {\n", elif.Cond)
-		if err := generateNodes(b, elif.Body); err != nil {
+		if err := generateNodes(b, file, elif.Body); err != nil {
 			return err
 		}
 	}
 
 	if n.Else != nil {
 		b.WriteString("} else {\n")
-		if err := generateNodes(b, n.Else); err != nil {
+		if err := generateNodes(b, file, n.Else); err != nil {
 			return err
 		}
 	}

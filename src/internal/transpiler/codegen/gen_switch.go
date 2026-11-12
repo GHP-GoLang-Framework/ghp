@@ -22,19 +22,21 @@ import (
 //
 //	b – destination buffer
 //	n – Switch node; Expr is the switched value, Cases/Default are branches
-func genSwitch(b *strings.Builder, n *ast.Switch) error {
+func genSwitch(b *strings.Builder, file string, n *ast.Switch) error {
+	writeLine(b, file, n.Line())
 	fmt.Fprintf(b, "switch %s {\n", n.Expr)
 
 	for _, c := range n.Cases {
+		writeLine(b, file, c.Line)
 		fmt.Fprintf(b, "case %s:\n", c.Value)
-		if err := generateNodes(b, c.Body); err != nil {
+		if err := generateNodes(b, file, c.Body); err != nil {
 			return err
 		}
 	}
 
 	if n.Default != nil {
 		b.WriteString("default:\n")
-		if err := generateNodes(b, n.Default); err != nil {
+		if err := generateNodes(b, file, n.Default); err != nil {
 			return err
 		}
 	}

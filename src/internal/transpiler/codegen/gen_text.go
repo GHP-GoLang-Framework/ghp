@@ -23,10 +23,11 @@ var lineBreakTab = regexp.MustCompile(`[\n\r\t]`)
 //
 //	b – destination buffer
 //	n – Text node whose Value is written to the response
-func genText(b *strings.Builder, n *ast.Text) {
+func genText(b *strings.Builder, file string, n *ast.Text) {
 	value := lineBreakTab.ReplaceAllString(n.Value, "")
 	if strings.TrimSpace(value) == "" {
 		return
 	}
+	writeLine(b, file, n.Line())
 	fmt.Fprintf(b, "io.WriteString(w, %q)\n", value)
 }

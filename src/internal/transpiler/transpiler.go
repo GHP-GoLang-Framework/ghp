@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"golang.org/x/term"
 
@@ -73,7 +74,14 @@ func transpile(page *pages.Page, src string, out string) error {
 		return fmt.Errorf("parse %s: %w", ghpPath, err)
 	}
 
-	goSrc, err := codegen.Assemble(page.PkgName, page.FuncName, program)
+	// Directives carry the absolute .ghp path so compiler errors, stack
+	// traces and debuggers resolve to the template wherever the staged .go
+	// file lives.
+	absGhp, err := filepath.Abs(ghpPath)
+	if err != nil {
+		return fmt.Errorf("resolve %s: %w", ghpPath, err)
+	}
+	goSrc, err := codegen.AssembleFile(page.PkgName, page.FuncName, filepath.ToSlash(absGhp), program)
 	if err != nil {
 		return fmt.Errorf("codegen %s: %w", ghpPath, err)
 	}

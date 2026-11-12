@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"ghp/src/internal/parser"
@@ -112,5 +113,42 @@ func TestParseAssembleBuildElif(t *testing.T) {
 	cmd.Dir = dir
 	if buildOut, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("go build failed: %v\n%s\n---\ngenerated file:\n%s", err, buildOut, out)
+	}
+}
+
+// TestLineDirectivesPointToGhp proves compiler errors in generated code
+// resolve to the original .ghp line, the foundation for debugger support.
+func TestLineDirectivesPointToGhp(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipped in short mode (go test -short)")
+	}
+
+	src := "<h1>Title</h1>\n<p>\n<go= undefinedName />\n</p>\n"
+	prog, err := parser.Parse(src)
+	if err != nil {
+		t.Fatalf("parser.Parse: %v", err)
+	}
+	ghp := "/abs/pages/index.ghp"
+	out, err := codegen.AssembleFile("pages", "Index", ghp, prog)
+	if err != nil {
+		t.Fatalf("AssembleFile: %v", err)
+	}
+
+	dir := t.TempDir()
+	for name, body := range map[string]string{"index.go": out, "go.mod": "module pages\n\ngo 1.26\n"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, args := range [][]string{{"build", "./..."}, {"vet", "./..."}} {
+		cmd := exec.Command("go", args...)
+		cmd.Dir = dir
+		got, err := cmd.CombinedOutput()
+		if err == nil {
+			t.Fatalf("go %s succeeded, want undefined-name error", args[0])
+		}
+		if want := ghp + ":3:"; !strings.Contains(string(got), want) {
+			t.Errorf("go %s output lacks %q:\n%s", args[0], want, got)
+		}
 	}
 }

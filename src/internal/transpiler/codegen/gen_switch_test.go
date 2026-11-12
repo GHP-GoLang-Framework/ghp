@@ -9,7 +9,7 @@ import (
 
 func TestGenSwitchWithDefault(t *testing.T) {
 	var b strings.Builder
-	err := genSwitch(&b, ast.NewSwitch("v",
+	err := genSwitch(&b, "", ast.NewSwitch("v",
 		[]ast.Case{
 			{Value: "1", Body: []ast.Node{ast.NewText("one", 2)}, Line: 2},
 			{Value: "2", Body: []ast.Node{ast.NewText("two", 3)}, Line: 3},
@@ -35,7 +35,7 @@ func TestGenSwitchWithDefault(t *testing.T) {
 
 func TestGenSwitchWithoutDefault(t *testing.T) {
 	var b strings.Builder
-	err := genSwitch(&b, ast.NewSwitch("v",
+	err := genSwitch(&b, "", ast.NewSwitch("v",
 		[]ast.Case{{Value: "1", Body: nil, Line: 2}},
 		nil,
 		1))
@@ -53,7 +53,7 @@ func TestGenSwitchWithoutDefault(t *testing.T) {
 
 func TestGenCaseBodyError(t *testing.T) {
 	var b strings.Builder
-	err := genSwitch(&b, ast.NewSwitch("v",
+	err := genSwitch(&b, "", ast.NewSwitch("v",
 		[]ast.Case{{Value: "1", Body: []ast.Node{nil}, Line: 1}},
 		nil, 1))
 	if err == nil {
@@ -63,7 +63,7 @@ func TestGenCaseBodyError(t *testing.T) {
 
 func TestGenDefaultBodyError(t *testing.T) {
 	var b strings.Builder
-	err := genSwitch(&b, ast.NewSwitch("v", nil, []ast.Node{nil}, 1))
+	err := genSwitch(&b, "", ast.NewSwitch("v", nil, []ast.Node{nil}, 1))
 	if err == nil {
 		t.Fatal("genSwitch() = nil error, want error from generateNodes")
 	}

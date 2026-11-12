@@ -32,7 +32,7 @@ func TestGenText(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var b strings.Builder
-			genText(&b, ast.NewText(tt.value, 1))
+			genText(&b, "", ast.NewText(tt.value, 1))
 
 			if got := b.String(); got != tt.want {
 				t.Errorf("genText() = %q, want %q", got, tt.want)

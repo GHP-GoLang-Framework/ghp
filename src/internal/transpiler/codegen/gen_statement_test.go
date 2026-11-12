@@ -9,7 +9,7 @@ import (
 
 func TestGenStatement(t *testing.T) {
 	var b strings.Builder
-	genStatement(&b, ast.NewStatement("x := 1", 1))
+	genStatement(&b, "", ast.NewStatement("x := 1", 1))
 
 	want := "x := 1\n"
 	if got := b.String(); got != want {

@@ -21,6 +21,10 @@ The build pipeline discovers `.ghp` pages, parses each page into an AST, generat
 
 The generated Go code uses `net/http` handlers, and GHP adds the imports those handlers need — see [Template tags](#template-tags) for the rules.
 
+### Source positions
+
+Generated `.go` files carry `//line /abs/path/page.ghp:N` directives (each at column 1, before every statement, echo, text write, `if`/`elif`, `switch`/`case` and `for` that comes from template line N). Compiler errors, `go vet` output, stack traces and Delve/DWARF breakpoints therefore point at the `.ghp` file instead of the staged `.go` file. Directives are always on for `ghp build`; programmatically, `codegen.AssembleFile` takes the `.ghp` path and `codegen.Assemble` emits none. Columns and a separate source-map file are not emitted yet.
+
 ## Example
 
 ```html
