@@ -236,3 +236,40 @@ func TestWriteRoutes(t *testing.T) {
 		t.Errorf("temp routes missing handler:\n%s", got)
 	}
 }
+
+func TestGoBuildArgs(t *testing.T) {
+	plain := strings.Join(goBuildArgs(Options{}, "/tmp/s", "/srv/p", "/o/app"), " ")
+	if plain != "build -o /o/app ." {
+		t.Errorf("plain args = %q", plain)
+	}
+	dbg := goBuildArgs(Options{Debug: true}, "/tmp/s", "/srv/p", "/o/app")
+	want := []string{"build", "-o", "/o/app", "-gcflags=all=-N -l -trimpath=/tmp/s=>/srv/p", "."}
+	if strings.Join(dbg, "|") != strings.Join(want, "|") {
+		t.Errorf("debug args = %q, want %q", dbg, want)
+	}
+}
+
+func TestCompileWithDebugBuildsAndKeepsOriginPaths(t *testing.T) {
+	src := minProject(t)
+	writeFile(t, src, "about.ghp", "<h1>About</h1>\n")
+	staged, err := Stage(src)
+	if err != nil {
+		t.Fatalf("Stage: %v", err)
+	}
+	defer os.RemoveAll(staged)
+
+	out := filepath.Join(t.TempDir(), "app")
+	if err := CompileWith(src, staged, src, out, Options{Debug: true}); err != nil {
+		t.Fatalf("CompileWith: %v", err)
+	}
+	if _, err := os.Stat(out); err != nil {
+		t.Fatalf("binary missing: %v", err)
+	}
+	gen, err := os.ReadFile(filepath.Join(staged, "about.go"))
+	if err != nil {
+		t.Fatalf("read generated page: %v", err)
+	}
+	if !strings.Contains(string(gen), "//line "+filepath.ToSlash(filepath.Join(src, "about.ghp"))+":") {
+		t.Errorf("directives do not name the original page:\n%s", gen)
+	}
+}

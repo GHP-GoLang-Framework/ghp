@@ -56,6 +56,35 @@ func Project(src, entry, output string) error {
 // Ex: Compile("/srv/pages", "/tmp/ghp-stage", "/srv/pages/src",
 // "/srv/bin/ghp-server") -> /srv/pages/src/ghproutes.go, /srv/bin/ghp-server.
 func Compile(src, stagedDir, entry, output string) error {
+	return CompileWith(src, stagedDir, entry, output, Options{})
+}
+
+// Options tunes a build beyond the paths.
+type Options struct {
+	// Debug builds for a debugger: optimizations and inlining are off so
+	// every `//line` position in a page can hold a breakpoint and every
+	// local stays readable.
+	Debug bool
+}
+
+// goBuildArgs returns the `go build` arguments for output. A debug build
+// turns off optimizations (-N) and inlining (-l) for every package and maps
+// the staged dir back to src in the recorded file paths, so breakpoints in
+// the project's own .go files resolve to the files the user edits.
+// Ex: debug, stagedDir /tmp/s, src /srv/p, output /o/app ->
+// build -o /o/app -gcflags=all=-N -l -trimpath=/tmp/s=>/srv/p .
+func goBuildArgs(opts Options, stagedDir, src, output string) []string {
+	args := []string{"build", "-o", output}
+	if opts.Debug {
+		args = append(args, "-gcflags=all=-N -l -trimpath="+stagedDir+"=>"+src)
+	}
+	return append(args, ".")
+}
+
+// CompileWith is Compile with build options. Ex: Debug true -> the binary
+// at output carries DWARF positions in the original .ghp files and the
+// project's .go files.
+func CompileWith(src, stagedDir, entry, output string, opts Options) error {
 	entryRel, err := filepath.Rel(src, entry)
 	if err != nil {
 		return err
@@ -87,7 +116,7 @@ func Compile(src, stagedDir, entry, output string) error {
 	failed := false
 	fmt.Println("Project: ", colors.Magenta(stagedDir))
 	for _, p := range projectPages {
-		if err := transpiler.Transpile(p, stagedDir, stagedDir); err != nil {
+		if err := transpiler.TranspileFrom(p, stagedDir, stagedDir, src); err != nil {
 			fmt.Fprintf(os.Stderr, "ghp: %s\n", err)
 			failed = true
 		}
@@ -107,7 +136,7 @@ func Compile(src, stagedDir, entry, output string) error {
 	if failed {
 		return fmt.Errorf("some pages failed to transpile; skipping binary build")
 	}
-	return compile(buildDir, output)
+	return compile(buildDir, goBuildArgs(opts, stagedDir, src, output), output)
 }
 
 // RemoveStaged keeps the staged dir on disk, tells the user where it is and
@@ -151,14 +180,14 @@ func Stage(src string) (string, error) {
 }
 
 // compile builds the main package of the staged module in tmpDir (the
-// project root, `go build .`) and writes the binary to output, creating the
+// project root, `go build .` with args) and writes the binary to output, creating the
 // output dir when needed. Ex: tmpDir /tmp/ghp-stage, output /out/app ->
 // /out/app.
-func compile(tmpDir, output string) error {
+func compile(tmpDir string, args []string, output string) error {
 	if err := os.MkdirAll(filepath.Dir(output), 0o755); err != nil {
 		return err
 	}
-	cmd := exec.Command("go", "build", "-o", output, ".")
+	cmd := exec.Command("go", args...)
 	cmd.Dir = tmpDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
