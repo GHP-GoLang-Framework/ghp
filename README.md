@@ -23,7 +23,20 @@ The generated Go code uses `net/http` handlers, and GHP adds the imports those h
 
 ### Source positions
 
-Generated `.go` files carry `//line /abs/path/page.ghp:N` directives (each at column 1, before every statement, echo, text write, `if`/`elif`, `switch`/`case` and `for` that comes from template line N). Compiler errors, `go vet` output, stack traces and Delve/DWARF breakpoints therefore point at the `.ghp` file instead of the staged `.go` file. Directives are always on for `ghp build`; programmatically, `codegen.AssembleFile` takes the `.ghp` path and `codegen.Assemble` emits none. Columns and a separate source-map file are not emitted yet.
+Generated `.go` files carry `//line /abs/path/page.ghp:N` directives (each at column 1, before every statement, echo, text write, `if`/`elif`, `switch`/`case` and `for` that comes from template line N). Compiler errors, `go vet` output, stack traces and Delve/DWARF breakpoints therefore point at the `.ghp` file instead of the staged `.go` file. Directives are always on for `ghp build`, and they name the page in your project, not the staged copy that is deleted after the build; programmatically, `codegen.AssembleFile` takes the `.ghp` path and `codegen.Assemble` emits none. Columns and a separate source-map file are not emitted yet.
+
+### Debugging
+
+`ghp build --debug` (alias `-g`) builds for a debugger: optimizations and inlining are off (`-gcflags=all=-N -l`), the staged dir is mapped back to the project in the recorded paths, and the build never waits for Enter, so editors can run it as a prelaunch step. Breakpoints can then be set on lines of the `.ghp` pages and of the project's own `.go` files:
+
+```sh
+ghp build --debug -o .debug/app .
+dlv dap --listen=127.0.0.1:0            # DAP launch: {"mode": "exec", "program": ".debug/app"}
+# or, interactively:
+dlv exec .debug/app                     # (dlv) break /abs/path/index.ghp:9
+```
+
+A page is an HTTP handler, so a breakpoint fires when a request reaches the route, not at startup. Only lines that start a statement, echo or text write carry code (a `<go ... />` block counts as the line of its opening tag); a breakpoint on any other line is reported as not verified by the debugger.
 
 ## Example
 

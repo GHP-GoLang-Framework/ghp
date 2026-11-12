@@ -32,7 +32,7 @@ func TestTranspileSuccess(t *testing.T) {
 
 	page := pages.NewPage("blog/about.ghp")
 	var buf bytes.Buffer
-	if err := transpileTo(page, src, out, &buf); err != nil {
+	if err := transpileTo(page, src, out, src, &buf); err != nil {
 		t.Fatalf("transpileTo: %v", err)
 	}
 
@@ -55,7 +55,7 @@ func TestTranspileReadError(t *testing.T) {
 
 	page := pages.NewPage("missing.ghp")
 	var buf bytes.Buffer
-	err := transpileTo(page, src, out, &buf)
+	err := transpileTo(page, src, out, src, &buf)
 	if err == nil {
 		t.Fatal("expected error for missing page")
 	}
@@ -73,7 +73,7 @@ func TestTranspileParseError(t *testing.T) {
 	out := t.TempDir()
 
 	page := pages.NewPage("broken.ghp")
-	err := transpileTo(page, src, out, &bytes.Buffer{})
+	err := transpileTo(page, src, out, src, &bytes.Buffer{})
 	if err == nil {
 		t.Fatal("expected parse error")
 	}
@@ -87,7 +87,7 @@ func TestTranspileCodegenError(t *testing.T) {
 	out := t.TempDir()
 
 	page := pages.NewPage("dup.ghp")
-	err := transpileTo(page, src, out, &bytes.Buffer{})
+	err := transpileTo(page, src, out, src, &bytes.Buffer{})
 	if err == nil {
 		t.Fatal("expected alias conflict error")
 	}
@@ -116,7 +116,7 @@ func TestTranspileMkdirError(t *testing.T) {
 	}
 
 	page := pages.NewPage("about.ghp")
-	err := transpileTo(page, src, out, &bytes.Buffer{})
+	err := transpileTo(page, src, out, src, &bytes.Buffer{})
 	if err == nil {
 		t.Fatal("expected mkdir error")
 	}
@@ -135,7 +135,7 @@ func TestTranspileWriteError(t *testing.T) {
 	}
 
 	page := pages.NewPage("about.ghp")
-	err := transpileTo(page, src, out, &bytes.Buffer{})
+	err := transpileTo(page, src, out, src, &bytes.Buffer{})
 	if err == nil {
 		t.Fatal("expected write error")
 	}
@@ -159,7 +159,30 @@ func TestTranspileTopLevelNoRelDir(t *testing.T) {
 	out := t.TempDir()
 
 	page := pages.NewPage("index.ghp")
-	if err := transpileTo(page, src, out, &bytes.Buffer{}); err != nil {
+	if err := transpileTo(page, src, out, src, &bytes.Buffer{}); err != nil {
 		t.Fatalf("transpileTo: %v", err)
+	}
+}
+
+func TestTranspileFromPointsDirectivesAtOrigin(t *testing.T) {
+	staged := t.TempDir()
+	origin := t.TempDir()
+	writePage(t, staged, "blog/post.ghp", "<h1>Post</h1>\n")
+	out := t.TempDir()
+
+	page := pages.NewPage("blog/post.ghp")
+	if err := TranspileFrom(page, staged, out, origin); err != nil {
+		t.Fatalf("TranspileFrom: %v", err)
+	}
+	got, err := os.ReadFile(page.Go(out))
+	if err != nil {
+		t.Fatalf("read generated file: %v", err)
+	}
+	want := "//line " + filepath.ToSlash(filepath.Join(origin, "blog", "post.ghp")) + ":"
+	if !strings.Contains(string(got), want) {
+		t.Errorf("generated file lacks directive %q:\n%s", want, got)
+	}
+	if strings.Contains(string(got), filepath.ToSlash(staged)) {
+		t.Errorf("generated file mentions the staged dir %q:\n%s", staged, got)
 	}
 }

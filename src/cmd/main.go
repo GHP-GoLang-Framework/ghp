@@ -64,7 +64,10 @@ func printUsage() {
 	Flags:
 	  -o, --output <file>       Binary file path (default: <project>/app)
 	  -e, --entry-point <dir>   Dir of the main package (default: dir of main.go)
-	  -p, --project <path>      Project dir (go.mod); same as a bare path arg`)
+	  -p, --project <path>      Project dir (go.mod); same as a bare path arg
+	  -g, --debug               Debug build: no optimizations or inlining, so a
+	                            debugger (dlv) can break at .ghp lines; the staged
+	                            dir is removed without waiting for Enter`)
 }
 
 // Build transpiles every page, generates ghproutes.go in the main package
@@ -90,8 +93,13 @@ func Build(args []string) int {
 		return 1
 	}
 
-	perr := build.Compile(src, tmpDir, entry, output)
-	build.RemoveStaged(tmpDir)
+	perr := build.CompileWith(src, tmpDir, entry, output, build.Options{Debug: p.debug})
+	if p.debug {
+		// A debug build is driven by tools (a prelaunch step): never wait on stdin.
+		os.RemoveAll(tmpDir)
+	} else {
+		build.RemoveStaged(tmpDir)
+	}
 	if perr != nil {
 		fmt.Fprintf(os.Stderr, "ghp: %v\n", perr)
 		return 1
@@ -122,7 +130,7 @@ func Dev(args []string) int {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	if err := build.Compile(src, tmpDir, entry, output); err != nil {
+	if err := build.CompileWith(src, tmpDir, entry, output, build.Options{Debug: p.debug}); err != nil {
 		fmt.Fprintf(os.Stderr, "ghp: %v\n", err)
 		return 1
 	}
@@ -134,11 +142,12 @@ type ghpParameters struct {
 	projectPath   string
 	entryPointDir string
 	output        string
+	debug         bool
 }
 
 // resolveParameters parses the build flags into ghpParameters. A bare path
 // argument sets the project; "-p/--project" is the flag form of the same
-// value, and "--name=value" and "--name value" are both accepted.
+// value, "-g/--debug" is a switch without value, and "--name=value" and "--name value" are both accepted.
 // Ex: ["-o", "bin/app", "--entry-point=cli", "site"] -> {site, cli, bin/app}.
 func resolveParameters(args []string) (ghpParameters, error) {
 	var p ghpParameters
@@ -149,6 +158,11 @@ func resolveParameters(args []string) (ghpParameters, error) {
 				return p, fmt.Errorf("project path set twice: %q and %q", p.projectPath, arg)
 			}
 			p.projectPath = arg
+			continue
+		}
+
+		if arg == "-g" || arg == "--debug" {
+			p.debug = true
 			continue
 		}
 

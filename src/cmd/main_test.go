@@ -94,6 +94,24 @@ func TestBuildSuccess(t *testing.T) {
 	}
 }
 
+func TestBuildDebug(t *testing.T) {
+	dir := minProject(t)
+	out := filepath.Join(t.TempDir(), "dbg", "app")
+	if got := Build([]string{"--debug", "-o", out, dir}); got != 0 {
+		t.Fatalf("Build --debug = %d, want 0", got)
+	}
+	if _, err := os.Stat(out); err != nil {
+		t.Errorf("debug binary not built: %v", err)
+	}
+}
+
+func TestDevDebug(t *testing.T) {
+	dir := minProject(t)
+	if got := Dev([]string{"-g", dir}); got != 0 {
+		t.Fatalf("Dev -g = %d, want 0", got)
+	}
+}
+
 func TestBuildProjectError(t *testing.T) {
 	dir := minProject(t)
 	writeFile(t, dir, "broken.ghp", "<go:if n == 1/>\n")
@@ -123,6 +141,8 @@ func TestResolveParameters(t *testing.T) {
 		{"output equals form", []string{"--output=bin/app"}, ghpParameters{output: "bin/app"}, ""},
 		{"entry point flag", []string{"-e", "cli"}, ghpParameters{entryPointDir: "cli"}, ""},
 		{"entry point equals form", []string{"--entry-point=cmd/server"}, ghpParameters{entryPointDir: "cmd/server"}, ""},
+		{"debug short", []string{"-g", "site"}, ghpParameters{projectPath: "site", debug: true}, ""},
+		{"debug long", []string{"--debug", "-o", "app"}, ghpParameters{output: "app", debug: true}, ""},
 		{"mixed flags and loose path", []string{"-o", "bin/app", "site"}, ghpParameters{projectPath: "site", output: "bin/app"}, ""},
 		{"flag value may start with dash", []string{"-o", "-net"}, ghpParameters{output: "-net"}, ""},
 		{"duplicate project path", []string{"site", "other"}, ghpParameters{}, "set twice"},

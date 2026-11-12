@@ -23,13 +23,23 @@ import (
 // reporting progress to the standard output. Ex: src /srv/pages,
 // out /tmp/ghp-x, blog/about.ghp -> /tmp/ghp-x/blog/about.go.
 func Transpile(page *pages.Page, src string, out string) error {
-	return transpileTo(page, src, out, os.Stdout)
+	return TranspileFrom(page, src, out, src)
 }
 
-// transpileTo is Transpile with the status output directed to w, so tests
-// can capture it instead of touching the real stdout.
-func transpileTo(page *pages.Page, src string, out string, w io.Writer) error {
-	err := transpile(page, src, out)
+// TranspileFrom is Transpile with the `//line` directives pointing at the
+// page under origin instead of under src. Builds transpile a staged copy of
+// the project that is deleted afterwards, so origin is the real project
+// dir: debuggers and compiler errors then resolve to files that still
+// exist. Ex: src /tmp/ghp-stage-1, origin /srv/pages, blog/about.ghp ->
+// directives name /srv/pages/blog/about.ghp.
+func TranspileFrom(page *pages.Page, src, out, origin string) error {
+	return transpileTo(page, src, out, origin, os.Stdout)
+}
+
+// transpileTo is TranspileFrom with the status output directed to w, so
+// tests can capture it instead of touching the real stdout.
+func transpileTo(page *pages.Page, src, out, origin string, w io.Writer) error {
+	err := transpile(page, src, out, origin)
 	name := colors.Yellow(page.FileName + ".ghp")
 	if page.RelDir != "" {
 		name = page.RelDir + "/" + name
@@ -62,7 +72,7 @@ func statusCol(w int) int {
 	return w * 8 / 10
 }
 
-func transpile(page *pages.Page, src string, out string) error {
+func transpile(page *pages.Page, src, out, origin string) error {
 	ghpPath := page.Ghp(src)
 	content, err := fsutil.ReadFile(ghpPath)
 	if err != nil {
@@ -74,12 +84,13 @@ func transpile(page *pages.Page, src string, out string) error {
 		return fmt.Errorf("parse %s: %w", ghpPath, err)
 	}
 
-	// Directives carry the absolute .ghp path so compiler errors, stack
-	// traces and debuggers resolve to the template wherever the staged .go
-	// file lives.
-	absGhp, err := filepath.Abs(ghpPath)
+	// Directives carry the absolute path of the .ghp under origin so
+	// compiler errors, stack traces and debuggers resolve to the template
+	// wherever the staged .go file lives.
+	originGhp := page.Ghp(origin)
+	absGhp, err := filepath.Abs(originGhp)
 	if err != nil {
-		return fmt.Errorf("resolve %s: %w", ghpPath, err)
+		return fmt.Errorf("resolve %s: %w", originGhp, err)
 	}
 	goSrc, err := codegen.AssembleFile(page.PkgName, page.FuncName, filepath.ToSlash(absGhp), program)
 	if err != nil {
