@@ -79,7 +79,8 @@ func (s *scanner) nextTagToken() (tagToken, error) {
 		return tagToken{}, &SyntaxError{Line: line, Message: "tag not closed with '/>"}
 	}
 
-	payload := strings.TrimSpace(s.src[payloadStart:closeIdx])
+	raw := s.src[payloadStart:closeIdx]
+	payload := strings.TrimSpace(raw)
 	// Every GHP tag is self-closing: the '/' right before the '>' is the
 	// closing marker, not part of the payload. Strip it (and any whitespace
 	// it carries) so <go:if cond/> yields "cond", not "cond/".
@@ -89,5 +90,18 @@ func (s *scanner) nextTagToken() (tagToken, error) {
 	payload = strings.TrimSpace(strings.TrimSuffix(payload, "/"))
 	s.advance(closeIdx + 1 - s.pos)
 
-	return tagToken{kind: kind, payload: payload, line: line}, nil
+	return tagToken{kind: kind, payload: payload, line: payloadLine(line, raw, payload)}, nil
+}
+
+// payloadLine returns the line on which the trimmed payload begins. For a
+// multi-line tag such as "<go\n\tx := 1\n/>" the Go code starts on the line
+// after the tag head, and the //line directives emitted for it must name that
+// line - otherwise every statement inside the block maps one line too early
+// and debugger breakpoints never match. An empty payload keeps tagLine.
+func payloadLine(tagLine int, raw, payload string) int {
+	if payload == "" {
+		return tagLine
+	}
+	lead := raw[:len(raw)-len(strings.TrimLeft(raw, " \t\r\n"))]
+	return tagLine + strings.Count(lead, "\n")
 }
