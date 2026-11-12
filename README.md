@@ -115,8 +115,24 @@ make build
 
 Use `make help` to list all available commands. The testing guide explains test organization, integration and end-to-end tests, and the project's coverage requirement.
 
+## Roadmap
+
+| Status | Item |
+| --- | --- |
+| ✅ Done | `//line` mapping in codegen, `ghp build --debug`, and correct lines in multi-line `<go ... />` blocks |
+| ✅ Done | `ghp-lsp` language server: diagnostics, completion, hover, formatting, and code actions |
+| ✅ Done | Lumen editor support: `.ghp` highlighting and Delve debugging with breakpoints in templates |
+| 🚧 In progress | Windows installer with self-update (#64) |
+| ⏳ Next | All HTTP methods working: `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
+| ⏳ Next | `require` for reusing `.ghp` files |
+| ⏳ Next | AI-generated documentation |
+| ⏳ Later | `references` and `signatureHelp` in `ghp-lsp`, non-blocking gopls, and aarch64 packaging tests |
+
+See [`ROADMAP.md`](ROADMAP.md) for the full list, including known limitations.
+
 ## Documentation
 
+- [`ROADMAP.md`](ROADMAP.md): what is delivered, in progress, and pending.
 - [`docs/template.ghp`](docs/template.ghp): GHP syntax reference.
 - [`docs/installation.md`](docs/installation.md): installation and release channels.
 - [`docs/testing.md`](docs/testing.md): test organization and conventions.
