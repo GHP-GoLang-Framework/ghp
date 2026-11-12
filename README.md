@@ -119,16 +119,19 @@ Use `make help` to list all available commands. The testing guide explains test 
 
 | Status | Item |
 | --- | --- |
-| ✅ Done | `//line` mapping in codegen, `ghp build --debug`, and correct lines in multi-line `<go ... />` blocks |
-| ✅ Done | `ghp-lsp` language server: diagnostics, completion, hover, formatting, and code actions |
-| ✅ Done | Lumen editor support: `.ghp` highlighting and Delve debugging with breakpoints in templates |
-| 🚧 In progress | Windows installer with self-update (#64) |
+| ✅ Done | Parser and AST, `go:if`/`go:elif`/`go:else`, `go:switch`, `go:for`, and inline `<go=expr/>` |
+| ✅ Done | File-based routing, `ghp build`, `ghp dev` with live reload, and `-p`/`-e`/`-o` flags |
+| ✅ Done | `//line` mapping and `ghp build --debug`, so errors and debuggers point at the `.ghp` file |
+| ✅ Done | Releases via GoReleaser (binaries, Docker, AUR, apt, COPR) |
+| ✅ Done | [Lumen](https://github.com/castrogusttavo/lumen-text) editor: `.ghp` highlighting, the `ghp-lsp` language server, and Delve debugging with breakpoints in templates |
+| ✅ Done | Editor support: [VS Code](https://github.com/GHP-GoLang-Framework/ghp-vscode), [tree-sitter](https://github.com/GHP-GoLang-Framework/tree-sitter-ghp), and [Zed](https://github.com/GHP-GoLang-Framework/ghp-zed) (initial) |
+| ✅ Done | Examples: [ghp-model](https://github.com/GHP-GoLang-Framework/ghp-model) (blog) and [url-shortener](https://github.com/GHP-GoLang-Framework/url-shortener) |
+| 🚧 In progress | Windows installer with self-update for Lumen ([#64](https://github.com/castrogusttavo/lumen-text/pull/64)) |
 | ⏳ Next | All HTTP methods working: `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
 | ⏳ Next | `require` for reusing `.ghp` files |
 | ⏳ Next | AI-generated documentation |
-| ⏳ Later | `references` and `signatureHelp` in `ghp-lsp`, non-blocking gopls, and aarch64 packaging tests |
 
-See [`ROADMAP.md`](ROADMAP.md) for the full list, including known limitations.
+See [`ROADMAP.md`](ROADMAP.md) for every merged PR, the other repositories, and known limitations.
 
 ## Documentation
 
