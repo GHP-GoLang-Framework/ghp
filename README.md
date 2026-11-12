@@ -115,8 +115,27 @@ make build
 
 Use `make help` to list all available commands. The testing guide explains test organization, integration and end-to-end tests, and the project's coverage requirement.
 
+## Roadmap
+
+| Status | Item |
+| --- | --- |
+| ✅ Done | Parser and AST, `go:if`/`go:elif`/`go:else`, `go:switch`, `go:for`, and inline `<go=expr/>` |
+| ✅ Done | File-based routing, `ghp build`, `ghp dev` with live reload, and `-p`/`-e`/`-o` flags |
+| ✅ Done | `//line` mapping and `ghp build --debug`, so errors and debuggers point at the `.ghp` file |
+| ✅ Done | Releases via GoReleaser (binaries, Docker, AUR, apt, COPR) |
+| ✅ Done | [Lumen](https://github.com/castrogusttavo/lumen-text) editor: `.ghp` highlighting, the `ghp-lsp` language server, and Delve debugging with breakpoints in templates |
+| ✅ Done | Editor support: [VS Code](https://github.com/GHP-GoLang-Framework/ghp-vscode), [tree-sitter](https://github.com/GHP-GoLang-Framework/tree-sitter-ghp), and [Zed](https://github.com/GHP-GoLang-Framework/ghp-zed) (initial) |
+| ✅ Done | Examples: [ghp-model](https://github.com/GHP-GoLang-Framework/ghp-model) (blog) and [url-shortener](https://github.com/GHP-GoLang-Framework/url-shortener) |
+| 🚧 In progress | Windows installer with self-update for Lumen ([#64](https://github.com/castrogusttavo/lumen-text/pull/64)) |
+| ⏳ Next | All HTTP methods working: `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
+| ⏳ Next | `require` for reusing `.ghp` files |
+| ⏳ Next | AI-generated documentation |
+
+See [`ROADMAP.md`](ROADMAP.md) for every merged PR, the other repositories, and known limitations.
+
 ## Documentation
 
+- [`ROADMAP.md`](ROADMAP.md): what is delivered, in progress, and pending.
 - [`docs/template.ghp`](docs/template.ghp): GHP syntax reference.
 - [`docs/installation.md`](docs/installation.md): installation and release channels.
 - [`docs/testing.md`](docs/testing.md): test organization and conventions.
