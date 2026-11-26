@@ -90,6 +90,12 @@ Before opening a pull request:
 
 Pull requests target `main`. CI must pass and the required review approval must be obtained before merge. The repository uses squash merges, so keep the pull request history easy to review even if the branch contains work-in-progress commits.
 
+## Issues linked from a pull request
+
+Every pull request must close at least one GitHub issue. Put `Closes #N` in the PR description for each issue it implements so GitHub links and closes them on squash merge; `Refs #N` does not count. A PR may close several issues. Each linked issue must carry exactly one `version:*` label (`version:major`, `version:minor`, or `version:patch`), and the release applies only the highest of those bumps — major > minor > patch, never a sum. CI validates these rules before merge.
+
+Dependabot is the only exception: dependency update PRs need no linked issue and are classified as a patch release. There are no other exemptions — docs-only and chore changes also need an issue.
+
 ## Reporting bugs and proposing features
 
 Open an [issue on GitHub](https://github.com/GHP-GoLang-Framework/ghp/issues). For bugs, include a minimal reproduction, expected behavior, actual behavior, and relevant environment details. For feature proposals, describe the problem before prescribing a solution.

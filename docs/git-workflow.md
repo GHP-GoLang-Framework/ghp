@@ -6,6 +6,7 @@ How to contribute to GHP: branch, commit, PR, and review.
 
 - `main` is protected — nobody pushes directly to it.
 - Every change starts as a branch from `main` and comes back as a Pull Request.
+- Every PR closes at least one GitHub issue, linked with `Closes #N` in the PR description; it may close several. Each linked issue must carry exactly one `version:*` label, and the highest bump wins (major > minor > patch). Dependabot dependency PRs are the only exception: they need no issue and count as a patch release.
 - Every PR must pass CI **and** be approved by [@castrogusttavo](https://github.com/castrogusttavo) before merge.
 
 ## Step by step
@@ -50,6 +51,8 @@ How to contribute to GHP: branch, commit, PR, and review.
    git push -u origin feat/go-for-tag
    gh pr create --base main --title "feat(parser): recognize the <go:for expression> tag"
    ```
+
+   The PR description must contain `Closes #N` for each issue it implements (at least one), and every linked issue must have one `version:*` label. CI checks both and reports the highest bump. Dependabot PRs are exempt.
 
    The **PR title must also be a Conventional Commit** — it is validated automatically by CI.
 

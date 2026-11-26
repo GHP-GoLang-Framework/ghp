@@ -1,6 +1,6 @@
 ## Summary
-<!-- Reference the Linear issue, if any -->
-Refs: GHP-
+<!-- Close at least one GitHub issue; several are allowed. Dependabot PRs are exempt. -->
+Closes #N
 
 <!-- What changed and why, in 1-3 bullets -->
 
@@ -15,6 +15,7 @@ Refs: GHP-
 - [ ] `gofmt -l ./src` no output and `go vet ./src/...` clean; `go test -short ./src/... -race` and `go test ./src/test/integration/... -race` pass locally
 - [ ] Tests covering the new case (CI requires minimum 90% coverage)
 - [ ] PR title follows [Conventional Commits](https://www.conventionalcommits.org/en/) (`type(scope): description`)
+- [ ] At least one issue is linked with `Closes #N`, every linked issue has exactly one `version:*` label, and the highest bump wins (Dependabot PRs are exempt)
 - [ ] Documentation updated if necessary (`docs/`, `README.md`)
 
 ## Impact
