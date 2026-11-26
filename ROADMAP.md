@@ -11,6 +11,7 @@ Everything under **Delivered** was checked against the merged pull requests and 
 | [ghp](https://github.com/GHP-GoLang-Framework/ghp) | The framework and the `ghp` CLI | Active, 80 PRs, 30+ releases |
 | [ghp-model](https://github.com/GHP-GoLang-Framework/ghp-model) | Example project: a complete GHP blog | Active, no releases |
 | [url-shortener](https://github.com/GHP-GoLang-Framework/url-shortener) | URL shortener built with GHP, Postgres, and Redis | Active, no releases |
+| [ghp-lsp](https://github.com/GHP-GoLang-Framework/ghp-lsp) | Standalone GHP language server for Neovim, Helix, Emacs, and any LSP client | Extracted from Lumen, CI green on Linux and Windows |
 | [Lumen](https://github.com/castrogusttavo/lumen-text) | CPU-rendered code editor for Linux, written in Rust, with `.ghp` support, the `ghp-lsp` language server (`tools/ghp-lsp`), and Delve debugging | Active, 60+ PRs, latest release `2026.11.12.18` |
 | [ghp-vscode](https://github.com/GHP-GoLang-Framework/ghp-vscode) | VS Code syntax highlighting for `.ghp` | `v0.1.0`, `.vsix` download |
 | [tree-sitter-ghp](https://github.com/GHP-GoLang-Framework/tree-sitter-ghp) | Tree-sitter grammar with highlight queries | One PR merged, no releases |
@@ -133,7 +134,7 @@ Closed without merging: [#11](https://github.com/GHP-GoLang-Framework/ghp/pull/1
 
 ## Lumen (editor, `ghp-lsp`, and debugger)
 
-[Lumen](https://github.com/castrogusttavo/lumen-text) is the editor with first-class GHP support. The `ghp-lsp` server lives in its `tools/ghp-lsp` directory.
+[Lumen](https://github.com/castrogusttavo/lumen-text) is the editor with first-class GHP support. The `ghp-lsp` server lives in its `tools/ghp-lsp` directory and is also published as the standalone [ghp-lsp](https://github.com/GHP-GoLang-Framework/ghp-lsp) repository, for other editors.
 
 ### GHP support
 
@@ -149,6 +150,12 @@ Closed without merging: [#11](https://github.com/GHP-GoLang-Framework/ghp/pull/1
 | [#60](https://github.com/castrogusttavo/lumen-text/pull/60) | Debug UI: toolbar, panel (call stack, variables, breakpoints, watch, console), conditional breakpoints, and hover-to-evaluate. |
 | [#61](https://github.com/castrogusttavo/lumen-text/pull/61) | GHP debug polish, optional `launch.json`, GHP docs, and a packaging dry run. |
 | [#63](https://github.com/castrogusttavo/lumen-text/pull/63) | No orphaned debuggee after Stop, Restart, or quit; program output and exit code in the Debug Console. |
+
+### Standalone `ghp-lsp`
+
+| Change | What changed |
+|---|---|
+| [ghp-lsp](https://github.com/GHP-GoLang-Framework/ghp-lsp) | `tools/ghp-lsp` extracted into its own repository in this organization (MIT), with CI on Linux and Windows and Neovim, Helix, and Emacs setup in the README. |
 
 ### Editor, releases, and platforms
 

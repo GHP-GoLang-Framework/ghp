@@ -124,6 +124,7 @@ Use `make help` to list all available commands. The testing guide explains test 
 | ✅ Done | `//line` mapping and `ghp build --debug`, so errors and debuggers point at the `.ghp` file |
 | ✅ Done | Releases via GoReleaser (binaries, Docker, AUR, apt, COPR) |
 | ✅ Done | [Lumen](https://github.com/castrogusttavo/lumen-text) editor: `.ghp` highlighting, the `ghp-lsp` language server, and Delve debugging with breakpoints in templates |
+| ✅ Done | Standalone [ghp-lsp](https://github.com/GHP-GoLang-Framework/ghp-lsp) language server for Neovim, Helix, Emacs, and any LSP client |
 | ✅ Done | Editor support: [VS Code](https://github.com/GHP-GoLang-Framework/ghp-vscode), [tree-sitter](https://github.com/GHP-GoLang-Framework/tree-sitter-ghp), and [Zed](https://github.com/GHP-GoLang-Framework/ghp-zed) (initial) |
 | ✅ Done | Examples: [ghp-model](https://github.com/GHP-GoLang-Framework/ghp-model) (blog) and [url-shortener](https://github.com/GHP-GoLang-Framework/url-shortener) |
 | 🚧 In progress | Windows installer with self-update for Lumen ([#64](https://github.com/castrogusttavo/lumen-text/pull/64)) |
