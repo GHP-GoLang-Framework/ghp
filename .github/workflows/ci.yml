@@ -324,6 +324,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # A PR must close at least one issue (several are allowed), each linked
+  # issue must carry exactly one version:* label, and the highest bump wins.
+  # Dependabot's dependency PRs are the only exemption. The validator is
+  # plain Python so its fixtures run without Go or a checkout of src.
+  pr-issues:
+    name: PR Issues & Version Labels
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Test the policy validator
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+
+      - name: Validate issues linked to this PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 .github/scripts/check_pr_issue.py "$PR_NUMBER"
+
   gate:
     name: CI Gate
     needs:
@@ -345,6 +370,9 @@ jobs:
       # rejected title fail the gate on pull requests. On a push it is
       # skipped (see its own `if`), and skipped is not a failure.
       - pr-title
+      # A PR without a linked, versioned issue would leave the release job
+      # without a bump to apply. Skipped on pushes like pr-title.
+      - pr-issues
     if: always()
     runs-on: ubuntu-latest
     steps:
